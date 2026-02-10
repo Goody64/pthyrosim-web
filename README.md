@@ -27,8 +27,8 @@ Web app for **patient-specific thyroid hormone simulation**: height, weight, sex
 
 ## Credits and license
 
-- **THYROSIM (web app and model):** Original code and design from the UCLA Biocybernetics Laboratory (Han et al., 2016). The THYROSIM-derived code in this repository is used under the terms of the original THYROSIM license. See **[License.docx](License.docx)** and **[docs/THYROSIM_ORIGINAL_README.md](docs/THYROSIM_ORIGINAL_README.md)**.
-- **p-THYROSIM (model and notebook):** The patient-specific model and Jupyter notebook are from the p-THYROSIM research project (2026 paper). The notebook in `refs/` is for reference and attribution; implementation in this repo is in Java/Perl/JS. Link to the official p-THYROSIM repo/paper when available.
+- **THYROSIM (web app and model):** Original [code](https://bitbucket.org/DistefanoLab/thyrosim) and design from the UCLA Biocybernetics Laboratory ([Han et al., 2016](https://pubmed.ncbi.nlm.nih.gov/26895744/)). The THYROSIM-derived code in this repository is used under the terms of the original THYROSIM license. See **[License.docx](License.docx)** and **[docs/THYROSIM_ORIGINAL_README.md](docs/THYROSIM_ORIGINAL_README.md)**.
+- **p-THYROSIM (model and notebook):** The patient-specific model and Jupyter notebook are from the [p-THYROSIM](https://github.com/rchen724/pthyrosim) research project ([2026 paper](https://pubmed.ncbi.nlm.nih.gov/41585792/)). The notebook in `refs/` is for reference and attribution; implementation in this repo is in Java/Perl/JS.
 
 ---
 
