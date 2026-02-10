@@ -1,0 +1,7 @@
+THYROSIM-origin code in this repository (e.g. Java solver, Perl modules, frontend
+derived from the original THYROSIM web app) is used under the terms of the
+original THYROSIM license.
+
+See the file "License.docx" in the repository root for the full license terms.
+
+Original THYROSIM: UCLA Biocybernetics Laboratory, Han et al., 2016.

@@ -1,0 +1,7 @@
+AuthUserFile /dir/to/thyrosim/.htpasswd
+AuthName "Thyroid Simulator"
+AuthType Basic
+require valid-user
+
+# This line disables password protection to the site.
+Satisfy any

@@ -1,0 +1,901 @@
+/*--------------------------------------------------
+* FILE:         thyrosim.css
+* AUTHOR:       Simon X. Han
+* DESCRIPTION:
+*   Thyrosim css rules.
+*--------------------------------------------------*/
+
+/*--------------------------------------------------
+* General rules and notes:
+* 1. Do not use unit with 0.
+* 2. Balance readability and alphabetization.
+* 3. Block elements take up all available width.
+* 4. Inline elements take up as much width as needed.
+* 5. Position required for z-index.
+*--------------------------------------------------*/
+
+/*--------------------------------------------------
+* Reset and generic elements
+*--------------------------------------------------*/
+
+/* Reset */
+html * {
+  border: 0;
+  margin: 0;
+  outline: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 100%;
+  font-style: inherit;
+  font-weight: inherit;
+}
+body {
+  line-height: 1;
+}
+a {
+  color: inherit;
+  text-decoration: underline;
+}
+a:hover {
+  color: red;
+}
+b {
+  font-weight: bold;
+}
+button {
+  cursor: pointer;
+}
+img {
+  border: 0;
+}
+input[type=input],   input[type=text],
+input[type=password],input[type=email], textarea {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+label {
+  cursor: pointer;
+}
+ol, ul {
+  list-style: none;
+}
+p {
+  display: block;
+  margin: 1.5em 0;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* Generic elements */
+html, body {
+  height: 100%;
+  font-family: arial,helvetica,sans-serif;
+  font-size: 100%;
+}
+input[type=text] {
+  width: 59%;
+}
+textarea {
+  width: 100%;
+}
+input[type=text], textarea {
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 0.25em;
+  padding: 0 0.1em;
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+}
+input[type=text]:focus, textarea:focus {
+  border: 1px solid #555;
+  box-shadow: 0 0 0.4em rgba(102, 175, 233, .6);
+}
+input[type=text].error, textarea.error {
+  border: 2px solid red;
+}
+input[type=checkbox] {
+  box-sizing: border-box;
+}
+
+/*--------------------------------------------------
+* Project-wide styles
+*--------------------------------------------------*/
+
+/* One-liners */
+.cursor-pointer { cursor: pointer; }
+.floatL { float: left; }
+.floatR { float: right; }
+.hide { display: none; }
+.show { display: block; }
+.color-black { color: black; }
+.color-blue  { color: blue;  }
+.color-white { color: white; }
+.mar-l-1em { margin-left: 1em; }
+.pad-t-1em { padding-top: 1em; }
+.pad-t-2em { padding-top: 2em; }
+.pad-b-1em { padding-bottom: 1em; }
+.pad-b-2em { padding-bottom: 2em; }
+.textcenter { text-align: center; }
+.title { font-size: 1.2em; }
+.width-100 { width: 100%; }
+
+/* Layouts and grids */
+.container {
+  box-sizing: border-box;
+  float: left;
+  width: 100%;
+}
+.grid-1-2 { width: calc(100% / 2); }
+.grid-1-3 { width: calc(100% / 3); }
+.grid-2-3 { width: calc(100% * 2 / 3); }
+.grid-1-5 { width: calc(100% * 1 / 5); }
+.grid-2-5 { width: calc(100% * 2 / 5); }
+.grid-3-5 { width: calc(100% * 3 / 5); }
+.grid-1-10 { width: calc(100% * 1 / 10); }
+.grid-9-10 { width: calc(100% * 9 / 10); }
+.grid-11-60 { width: calc(100% * 11 / 60); }
+.grid-13-60 { width: calc(100% * 13 / 60); }
+.grid-1-2,
+.grid-1-3, .grid-2-3,
+.grid-1-5, .grid-2-5, .grid-3-5,
+.grid-1-10, .grid-9-10,
+.grid-11-60, .grid-13-60 {
+  box-sizing: border-box;
+  float: left;
+}
+
+/* Buttons - Bootstrap buttons colorscheme */
+.btn {
+  border: 1px solid transparent;
+  border-radius: 0.25em;
+  line-height: 1;
+  margin: 0.1em 0.3em;
+  padding: 0.4em;
+}
+.btn-blue {
+  background-color: #007bff;
+  border: 1px solid #007bff;
+  color: white;
+}
+.btn-blue:hover, .btn-blue.active {
+  background-color: #0069d9;
+  border: 1px solid #0062cc;
+}
+.btn-gray {
+  background-color: #6c757d;
+  border: 1px solid #6c757d;
+  color: white;
+}
+.btn-gray:hover, .btn-gray.active {
+  background-color: #5a6268;
+  border: 1px solid #545b62;
+}
+.btn-green {
+  background-color: #28a745;
+  border: 1px solid #28a745;
+  color: white;
+}
+.btn-green:hover, .btn-green.active {
+  background-color: #218838;
+  border: 1px solid #1e7e34;
+}
+.btn-red {
+  background-color: #dc3545;
+  border: 1px solid #dc3545;
+  color: white;
+}
+.btn-red:hover, .btn-red.active {
+  background-color: #c82333;
+  border: 1px solid #bd2130;
+}
+.btn-yellow {
+  background-color: #ffc107;
+  border: 1px solid #ffc107;
+  color: #212529;
+}
+.btn-yellow:hover, .btn-yellow.active {
+  background-color: #e0a800;
+  border: 1px solid #d39e00;
+}
+.btn-teal {
+  background-color: #17a2b8;
+  border: 1px solid #17a2b8;
+  color: white;
+}
+.btn-teal:hover, .btn-teal.active {
+  background-color: #138496;
+  border: 1px solid #117a8b;
+}
+.btn-white {
+  background-color: #f8f9fa;
+  border: 1px solid #f8f9fa;
+  color: #212529;
+}
+.btn-white:hover, .btn-white.active {
+  background-color: #e2e6ea;
+  border: 1px solid #dae0e5;
+}
+.btn-black {
+  background-color: #343a40;
+  border: 1px solid #343a40;
+  color: white;
+}
+.btn-black:hover, .btn-black.active {
+  background-color: #23272b;
+  border: 1px solid #1d2124;
+}
+
+/* Button - Custom radio buttons */
+.btn-group {
+  display: inline-block;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+.btn-group>.btn {
+  position: relative;
+}
+.btn-group>label {
+  margin: 0 0 0 0; /* reset .btn margins */
+  padding-left: 0.6em;
+}
+.btn-group>label:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.btn-group>label:last-child {
+  padding-right: 0.6em;
+}
+.btn-group>label:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.btn-group>label>input[type="radio"] { /* Hide radio button */
+  opacity: 0;
+  position: absolute;
+  height: 0;
+  width: 0;
+}
+.btn-group>.active { z-index: 1 } /* Set active button higher to show borders */
+.btn-group>.btn-blue.active  {box-shadow: 0 0 0 0.2rem rgba(  0,123,255,.5);}
+.btn-group>.btn-gray.active  {box-shadow: 0 0 0 0.2rem rgba(108,117,125,.5);}
+.btn-group>.btn-green.active {box-shadow: 0 0 0 0.2rem rgba( 40,167, 69,.5);}
+.btn-group>.btn-red.active   {box-shadow: 0 0 0 0.2rem rgba(220, 53, 69,.5);}
+.btn-group>.btn-yellow.active{box-shadow: 0 0 0 0.2rem rgba(255,193,  7,.5);}
+.btn-group>.btn-teal.active  {box-shadow: 0 0 0 0.2rem rgba( 23,162,184,.5);}
+.btn-group>.btn-white.active {box-shadow: 0 0 0 0.2rem rgba(248,249,250,.5);}
+.btn-group>.btn-black.active {box-shadow: 0 0 0 0.2rem rgba( 52, 58, 64,.5);}
+
+/* Button - Custom checkboxes */
+.switch {
+  margin-top: 0.1rem;
+}
+.switch label {
+  display: inline-block;
+}
+.switch label input[type=checkbox] {
+  opacity: 0;
+  position: absolute;
+  height: 0;
+  width: 0;
+}
+.switch label input[type=checkbox]:checked+.lever {
+  background-color: #dccfe2;
+}
+.switch label input[type=checkbox]:checked+.lever:after {
+  background-color: #a6c;
+  left: 1.5rem;
+}
+.switch label .lever {
+  background-color: #818181;
+  border-radius: 0.9375rem;
+  content: "";
+  display: inline-block;
+  margin: -0.2rem 0.625rem 0.07rem 0.625rem;
+  position: relative;
+  vertical-align: middle;
+  height: 0.9375rem;
+  width: 2.5rem;
+  -webkit-transition: background 0.3s ease;
+  transition: background 0.3s ease;
+}
+.switch label .lever:after {
+  background-color: #f1f1f1;
+  border-radius: 1.3125rem;
+  box-shadow: 0 0.0625rem 0.1875rem 0.0625rem rgba(0,0,0,0.4);
+  content: "";
+  display: inline-block;
+  position: absolute;
+  left: -0.3125rem;
+  top: -0.1875rem;
+  height: 1.3125rem;
+  width: 1.3125rem;
+  -webkit-transition: left 0.3s ease, background 0.3s ease,
+                      -webkit-box-shadow 1s ease;
+  transition: left 0.3s ease, background 0.3s ease, -webkit-box-shadow 1s ease;
+  transition: left 0.3s ease, background 0.3s ease, box-shadow 1s ease;
+  transition: left 0.3s ease, background 0.3s ease, box-shadow 1s ease,
+              -webkit-box-shadow 1s ease;
+}
+
+/* Button - Icon */
+.btn-icon {
+  background-color: transparent;
+}
+.btn-icon:hover, .btn-icon:active {
+  border-radius: 0.3em;
+  box-shadow: 0.125em 0.125em 0.3em #000000;
+  position: relative;
+  z-index: 2;
+}
+
+/* Button - Icon for T3 and T4 */
+.btn-icon-t3:hover, .btn-icon-t3:active {
+  box-shadow: 0.125em 0.125em 0.3em #12249c;
+}
+.btn-icon-t4:hover, .btn-icon-t4:active {
+  box-shadow: 0.125em 0.125em 0.3em #1c9c30;;
+}
+
+/* Button - Anchor */
+.btn-anchor {
+  background-color: transparent;
+  border-radius: 0.3em;
+  color: #818a91;
+  font-size: 0.8em;
+  margin: 0.2em;
+  padding: 0.3em;
+}
+.btn-anchor:hover {
+  background-color: #027de7;
+  color: white;
+}
+
+/* Toggle input on/off */
+.tog-in {
+  border: 1px solid transparent;
+  border-radius: 0.25em;
+  cursor: pointer;
+  display: inline-block;
+  line-height: 1;
+  padding: 0 0.25em;
+  text-align: center;
+  width: 2.2em;
+}
+.tog-in-1 { /* Toggle on */
+  background-color: #d3eda3;
+  color: #72962e;
+}
+.tog-in-1:hover {
+  background-color: #bfd693;
+}
+.tog-in-2 { /* Toggle off */
+  background-color: #f5ab9e;
+  color: #8c3a2b;
+}
+.tog-in-2:hover {
+  background-color: #dd9a8f;
+}
+
+/* Arrow */
+.arrow {
+  border: solid black;
+  border-width: 0 0.188em 0.188em 0;
+  display: inline-block;
+  margin: 0 0.3em;
+  padding: 0.188em;
+}
+.arrow-r {
+  -webkit-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+}
+.arrow-l {
+  -webkit-transform: rotate(135deg);
+  transform: rotate(135deg);
+}
+.arrow-u {
+  margin-bottom: -0.1em;
+  -webkit-transform: rotate(-135deg);
+  transform: rotate(-135deg);
+}
+.arrow-d {
+  margin-bottom: 0.1em;
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+/* Horizontal bars */
+.bar-h-gold, .bar-h-transparent {
+  height: 0.8em;
+  width: 100%;
+}
+.bar-h-gold        { background-color: gold; }
+.bar-h-transparent { background-color: transparent; }
+
+/* Icon graphics */
+.info-icon-s, .info-icon-m, .info-icon-l, .info-icon-fw {
+  margin-top: -0.2em;
+  vertical-align: middle;
+}
+.info-icon-s  { height: 1em; }
+.info-icon-m  { height: 1.2em; }
+.info-icon-l  { height: 1.6em; }
+.info-icon-fw { height: 4.5em; } /* fw for follow */
+
+/* Overlay messages - Bootstrap alerts colorscheme */
+#overlay {
+  background-color: rgb(0,0,0); /* black background */
+  background-color: rgba(0,0,0,0.75); /* add opacity */
+  display: none;
+  overflow-x: hidden; /* disable horizontal scroll */
+  overflow-y: hidden; /* disable vertical scroll */
+  padding-top: 20em;
+  position: fixed;
+  text-align: center;
+  z-index: 100;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+}
+#overlay>div {
+  margin: 0 auto;
+  width: 50%;
+}
+#overlay button {
+  margin-top: -3em;
+}
+#overlay #overlay-content {
+  border: 1px solid transparent;
+  border-radius: 0.25em;
+  padding: 2em 0 4em;
+}
+.overlay-green {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+.overlay-red {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* Superscript and subscript */
+.supsub {
+  display: inline-block;
+  font-style: italic;
+  margin-right: -0.1em;
+  position: relative;
+}
+.supsub sup, .supsub sub, .supsub .hidden {
+  font-size: 0.7em;
+}
+.supsub .hidden { /* Hidden span to keep width */
+  visibility: hidden;
+}
+.supsub sup, .supsub sub {
+  left: 0.85em;
+  position: absolute;
+}
+.supsub sup { top:    -0.2em; }
+.supsub sub { bottom: -0.1em; }
+
+/* Miscellaneous */
+.follow { /* Display a waiting message box */
+  background-color: #d6d8d9;
+  border: 1px solid #bbb;
+  border-color: #c6c8ca;
+  border-radius: 0.25em;
+  color: #1b1e21;
+  display: none;
+  padding: 0.2em 0.8em 0.1em 0.2em;
+  position: absolute;
+  width: 25em;
+  z-index: 50;
+}
+.follow img { /* Spinner from https://loading.io/ */
+  margin: -0.6em -0.6em -0.6em -0.3em;
+}
+.follow span {
+  margin: 0.6em 0 0 0.45em;
+}
+.button-row {
+  height: 2.125em;
+}
+.select-none { /* Unselectable text */
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  -o-user-select: none !important;
+  user-select: none !important;
+}
+
+/* jQuery UI customizations */
+.thysim-tooltip { /* Tooltip customization */
+  background: #d1ecf1;
+  border: 0.125em solid #bee5eb;
+  box-shadow: none;
+  color: #0c5460;
+  font-size: 0.875em;
+  min-width: 17em;
+  max-width: 30em;
+  padding: 0.8em;
+  z-index: 99;
+}
+.ui-slider-horizontal .ui-slider-range { /* Fixes top border */
+  top: -0.02em;
+  height: 105%;
+}
+.ui-slider-horizontal .ui-slider-range-min { /* Fixes left border */
+  left: -0.02em;
+}
+
+/*--------------------------------------------------
+* Overall layout
+* #wrapper
+* - header
+*   - #ucla (UCLA logo)
+*   - #biocyb (Biocybernetics logo)
+*   - (Directions, Examples, Projects, Disclaimer buttons)
+*   - .bar-h-gold (Horizontal gold bar)
+*   - #non-ie-warn (Warning for non-IE browsers)
+* - #navbar (empty)
+* - main
+*   - #container-top
+*     - #container-top-left
+*       - #sidebar
+*         - (T3 inputs)
+*         - (T4 inputs)
+*       - #img-param
+*         - #parameters
+*         - #paramtextarea
+*         - (Hilites)
+*         - (Animations)
+*     - (Panel Right)
+*       - (Graphs)
+*   - .bar-h-gold (Horizontal gold bar)
+*   - #container-bot
+*     - #input-panel
+*       - #input-manager
+*     - #control-panel
+*       - (Secretion/Absorption Manager)
+*       - (Simulation Time)
+*       - (Recalculate Initial Condition Manager)
+*       - (Blue/Green Manager)
+*       - (Control Buttons)
+*   - .bar-h-gold (Horizontal gold bar)
+* - footer
+*   - .container (top)
+*     - (Copyright)
+*   - .container (mid)
+*     - (References)
+*     - (Recent News)
+*     - (Acknowledgements)
+*   - .container (bot)
+*     - (Contact & Code Repo)
+* - #follow
+* Notes:
+*   #:  ID
+*   .:  Class
+*   (): Some content
+*   W/o markup: HTML element
+* This section is only for #wrapper and its children.
+*--------------------------------------------------*/
+
+#wrapper {
+  margin: 0 auto;
+  width: 1050px;
+}
+header {
+  background-color: #fafafa;
+  height: 3.2em;
+}
+main {
+}
+footer {
+  background-color: #f7f7f9;
+  opacity: 0.7;
+}
+
+/*--------------------------------------------------
+* Header
+*--------------------------------------------------*/
+
+/* UCLA logo */
+#ucla {
+  background-color: #2c5e91;
+  color: white;
+  font-style: italic;
+  font-weight: bold;
+  padding: 0.45em 0.3em 0.35em 0.2em;
+}
+#ucla span {
+  font-size: 2.4em;
+}
+/* Biocyb logo */
+#biocyb {
+  background-color: #72b626;
+  color: white;
+  font-style: italic;
+  font-weight: bold;
+  padding: 0.8em 0.5em 0.8em 0.5em;
+}
+#biocyb span {
+  font-size: 1.6em;
+}
+/* Info button and content */
+.info-btn {
+  background-color: #008ed4;
+  border: 1px solid transparent;
+  border-radius: 0.25em;
+  color: white;
+  margin: 0.6em 0 0 1em;
+  padding: 0.4em;
+}
+.info-btn:hover {
+  background-color: #0273ac;
+}
+#info-btn-Disclaimer { /* Only for last info button */
+  margin-bottom: 0.5em;
+}
+.info-btn-a, .info-btn-a:hover { /* a for active */
+  background-color: #696969;
+  position: relative;
+  z-index: 3;
+}
+.info-btn-c { /* c for content */
+  background-color: #F0F8FF;
+  border: 0.563em solid #696969;
+  border-radius: 0 1em 1em 1em;
+  display: none;
+  line-height: 1.4;
+  margin: 2.3em 0 0 1em; /* margin-left same as .info-btn */
+  padding: 0 1em 0 1em;
+  position: absolute;
+  width: 28.5em;
+  z-index: 2; /* content does not block button */
+}
+.info-btn-c div {
+  display: block;
+  margin: 1.8em 0 1.5em 0;
+}
+.info-btn-c ol, .info-btn-c ul {
+  margin: 0.625em 0 0.625em;
+  padding-left: 2em;
+}
+.info-btn-c ol {
+  list-style-type: decimal;
+}
+.info-btn-c ol ol {
+  list-style-type: lower-alpha;
+}
+/* Examples */
+.example {
+  margin-bottom: 0.8em;
+}
+.example-wrp { /* wrp for wrapper */
+  margin-right: 0.8em;
+  width: 59%;
+}
+.example-txt { /* txt for text */
+  display: block;
+  margin-bottom: 1em;
+}
+.example-tbn { /* tbn for thumbnail */
+  border-radius: 0.6em;
+  box-shadow: 0.8em 0.8em 0.5em -0.4em rgba(0,0,0,0.5);
+  vertical-align: top;
+  width: 10.8em;
+}
+/* Non-IE warning */
+.non-ie-warn {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 0.75em 1.25em;
+}
+
+/*--------------------------------------------------
+* Main
+*--------------------------------------------------*/
+
+/* Main layout */
+#container-top>div {
+  padding: 0.625em;
+}
+#container-top-left {
+  height: 33.2em;
+}
+#container-bot>div {
+  padding: 1.25em;
+}
+
+/* Container (top) - Panel Left - Hormone menu sidebar */
+#sidebar {
+  width: 4em;
+}
+.T-menu-head {
+  font-size: 1.2em;
+  margin-bottom: 0.625em;
+}
+.T-menu-head button {
+  padding: 0.4em 0;
+}
+.T-menu {
+  background-color: #fafafa;
+  margin: -0.825em 0 0.625em 0;
+  text-align: center;
+}
+.T-menu button {
+  margin: 0.4em;
+}
+.T-menu button img {
+  height: 3em;
+}
+
+/* Container (top) - Panel Left - Diagram and parameters */
+#img-param {
+  background-image: url("../img/sim.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100%;
+  margin: 0 0 0 0.625em;
+  position: relative;
+  width: 85%;
+}
+#parameters {
+  background-color: white;
+  display: none;
+  height: 90%;
+  line-height: 1.6;
+  padding: 0.625em 0 0 0.625em;
+  position: relative;
+  z-index: 1;
+}
+.paramrow {
+  width: 100%;
+}
+.paramrow:after {
+  clear: both;
+  content: "";
+  display: table;
+}
+.paramcol {
+  float: left;
+  font-size: 0.8em;
+  width: 33%;
+}
+.paramcol .paramval {
+  display: inline-block;
+  text-align: right;
+  width: 36%;
+}
+#paramtextarea {
+  font-size: 0.7em;
+  margin: 0.625em 0;
+}
+#hilite1, #hilite2, #hilite3, #hilite4 {
+  display: none;
+  position: absolute;
+}
+#hilite1 { left: 11.56em ; top: 21.11em; }
+#hilite2 { left:  8.75em ; top: 14.45em; }
+#hilite3 { left: 12.83em ; top: 21.11em; }
+#hilite4 { left:  9.18em ; top: 13.95em; }
+.spill, .inject, .infuse {
+  position: absolute;
+}
+.spill  { left: 3.19em; top:  6.41em; }
+.inject { left: 0.65em; top: 13.85em; }
+.infuse { left: 0.95em; top: 17.45em; }
+
+/* Container (top) - Panel Right - D3 customizations */
+.d3chart {
+}
+.d3chart .tick text {
+  font: 0.688em sans-serif;
+  stroke: black;
+  stroke-width: 0;
+}
+.d3chart .tooltip {
+  background: lightsteelblue;
+  border: 0;
+  border-radius: 0.5em;
+  font: 0.875em sans-serif;
+  padding: 0.125em 0.4em;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+}
+
+/* Container (bot) */
+
+/* Container (bot) - Panel Left - Input panel */
+#input-panel {
+  background-color: aliceblue;
+}
+#input-manager {
+  font-size: 0.9em;
+}
+.row1, .row0 { display: block; } /* Alternating input row colors */
+.row1 { background-color: thistle; }
+.row0 { background-color: transparent; }
+.input-row {
+  border-left: 1.25em solid transparent;
+  border-right: 1.25em solid transparent;
+  float: left;
+  margin: 0 -1.25em;
+  padding: 0.5em 0;
+  width: 100%;
+}
+.input-row input[type=text] {
+  width: 3em;
+}
+.input-row input[type=text].oral-dose {
+  width: 4em;
+}
+.input-subrow:not(:first-child) {
+  margin-top: 0.2em;
+}
+
+/* Container (bot) - Panel Right - Control panel */
+#control-panel {
+  background-color: lavenderblush;
+}
+.slider-row {
+  padding-bottom: 0.25em;
+}
+#simtime { /* Override default text input width */
+  width: 3em;
+}
+
+/*--------------------------------------------------
+* Footer
+*--------------------------------------------------*/
+
+/* Container */
+.footer-title {
+}
+.footer-list {
+  float: left;
+  padding: 1em 3em 1em 5em;
+}
+.footer-list ol {
+  counter-reset: item;
+  list-style: none;
+}
+.footer-list ol li {
+  counter-increment: item;
+  font-size: 0.85em;
+}
+.footer-list ol li:before {
+  background: steelblue;
+  border-radius: 100%;
+  color: white;
+  content: counter(item);
+  display: inline-block;
+  font-size: 0.85em;
+  height: 1em;
+  margin: 0.1em 0 0 -1.4em;
+  position: absolute;
+  text-align: center;
+  width: 1em;
+}
+
+/*--------------------------------------------------
+* Responsive design
+*--------------------------------------------------*/
+@media screen and (max-width: 525px) { /* When viewport is <= the size */
+  #wrapper { width: 525px; }
+  .m-grid-1-1 { width: 100%; }
+  .m-grid-1-2 { width: calc(100% / 2); }
+}
+
+/*--------------------------------------------------
+* Temp
+*--------------------------------------------------*/

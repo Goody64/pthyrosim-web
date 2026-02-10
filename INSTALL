@@ -1,0 +1,77 @@
+Installation instructions for Ubuntu. Tested on 10.04 and 12.04.
+
+I. Clone repository to your /webroot/:
+$ cd /webroot/
+$ git clone https://bitbucket.org/DistefanoLab/thyrosim.git
+This creates /webroot/thyrosim/
+
+II. Install c compiler:
+$ sudo apt-get install linux-kernel-headers
+$ sudo apt-get install build-essential
+
+III. Verify cpan is installed:
+$ cpan
+If cpan is not installed, you can either:
+a. Install cpan or
+b. Install Perl packages manually
+
+IV. Install Perl package JSON::Syck via cpan:
+$ sudo cpan
+cpan[1]> install JSON::Syck
+
+V. Install odepkg (odepkg-0.8.2.tar.gz included in thyrosim/octave)
+$ octave --version
+GNU Octave, version 3.2.4
+Make sure to get the octave header that matches your octave version, although
+odepkg requires Octave ver. >= 3.2.0
+$ sudo apt-get install octave3.2-headers
+$ cd thyrosim/octave (where odepkg-0.8.2.tar.gz is)
+$ sudo octave
+octave:1> pkg install odepkg-0.8.2.tar.gz
+If there are permission issues related to odepkg, first find where odepkg is
+installed:
+octave:1> pkg list
+cd to the directory and make all m files executable
+$ sudo chmod +x *.m
+
+VI. Setup Apache
+a. httpd.conf: enable ExecCGI for thyrosim/cgi-bin
+For Ubuntu, the file is likely in /etc/apache2/httpd.conf
+Your httpd.conf should look something like the below:
+-----------------------------------------------------------
+NameVirtualHost *:80
+
+<VirtualHost *:80>
+        DocumentRoot /webroot
+        ServerAdmin webmaster@example.com
+        ServerName example.com
+        ServerAlias *.example.com
+
+        <Directory /webroot/>
+                Options FollowSymLinks -Indexes
+                AllowOverride All
+        </Directory>
+        <Directory /webroot/thyrosim/>
+                Options FollowSymLinks -Indexes
+                AllowOverride None
+        </Directory>
+        <Directory /webroot/thyrosim/cgi-bin>
+                Options ExecCGI
+                AddHandler cgi-script .cgi
+        </Directory>
+</VirtualHost>
+-----------------------------------------------------------
+Restart Apache after editing httpd.conf
+
+b. ports.conf:
+Add: Listen your.ip.xxx.xxx
+Comment out: Listen 80
+
+VII. Common Errors:
+a. Step size error
+Step sizes are currently set in ~/octave/getinit.m and ~/octave/thyrosim.m.
+An 'InitialStep' of 1 seems to work for me. If you encounter errors related to
+step sizes, try adjusting this value.
+b. cgi script related
+Make sure to restart Apache after enabling ExecCGI in httpd.conf. httpd.conf is
+read upon Apache start.
