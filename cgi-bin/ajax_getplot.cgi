@@ -102,7 +102,8 @@ if ($thsim->hasICKey($ickey) || !$thsim->recalcIC()) { # Skipping i0
 } else {
     my $ICstr = $thsim->getICString('0');
 
-    my $cmd = "$solver $ICstr 0 1008 $dials 0 0 $thysim initic $ps";
+    my $anthro = $thsim->getAnthroString();
+    my $cmd = "$solver $ICstr 0 1008 $dials 0 0 $thysim initic $ps $anthro";
     my @res = `$cmd` or die "died: $!";
     $thsim->processResults(\@res,'0');
 }
@@ -119,7 +120,8 @@ foreach my $iThis (@$iXs) {
     my $ICstr = $thsim->getICString($iThis);
     my $u     = $thsim->getInfValue($iThis);
 
-    my $cmd = "$solver $ICstr $start $end $dials $u $thysim noinit $ps";
+    my $anthro = $thsim->getAnthroString();
+    my $cmd = "$solver $ICstr $start $end $dials $u $thysim noinit $ps $anthro";
     my @res = `$cmd` or die "died: $!";
     $thsim->processResults(\@res,$iThis);
 }
