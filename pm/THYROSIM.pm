@@ -164,6 +164,12 @@ sub new {
     $self->{dial}->{3} = 100; # T3 Secretion
     $self->{dial}->{4} = 88;  # T3 Absorption
 
+    # Define default anthropometric data values
+    $self->{anthro}->{height} = undef; # meters (optional) --> undef
+    $self->{anthro}->{weight} = undef; # kg (optional) --> undef
+    $self->{anthro}->{sex}    = undef; # 'M' or 'F'(optional) --> undef
+    $self->{anthro}->{mode}   = 'days'; # default to days or can be 'hours'
+
     # Define default simulation time (days)
     $self->{simTime} = 5;
     $self->{simTimeMax} = 100;
@@ -292,7 +298,6 @@ sub processForm {
 #====================================================================
 sub _processForm {
     my ($self,$data) = @_;
-
     my $form = $self->getFormParams($data);
 
     # Save the form parameters
@@ -320,6 +325,15 @@ sub _processForm {
         # Dosing information. Assume splittable by '-'
         } elsif ($key =~ m/(\w+)-(\d+)/) {
             $self->setLvl3('input',$2,$1,$form->{$key});
+         # Anthropometric (H,S,W) information
+        } elsif ($key eq "height") {
+            $self->setLvl2('anthro','height',$form->{$key});
+        } elsif ($key eq "weight") {
+            $self->setLvl2('anthro','weight',$form->{$key});
+        } elsif ($key eq "sex") {
+            $self->setLvl2('anthro','sex',$form->{$key});
+        } elsif ($key eq "mode") {
+            $self->setLvl2('anthro','mode',$form->{$key});
         # Ignore un-identified inputs
         } else {
         }
@@ -1332,6 +1346,28 @@ sub getParams {
         $str .= $self->{params}->{$p}." ";
     }
     return $str;
+}
+
+#====================================================================
+# SUBROUTINE:   getAnthroString
+# DESCRIPTION:
+#   Get anthropometric parameters formatted for command line.
+#   Supplements getParams
+#   * Returns empty string if not in hours mode or if values not set.
+# 
+#====================================================================
+sub getAnthroString {
+    my ($self) = @_;
+    
+    my $height = $self->getLvl2('anthro','height');
+    my $weight = $self->getLvl2('anthro','weight');
+    my $sex    = $self->getLvl2('anthro','sex');
+    my $mode   = $self->getLvl2('anthro','mode') // 'days';
+    if ($mode eq 'hours' && defined $height && defined $weight && defined $sex) {
+        my $sexBool = ($sex eq 'M' || $sex eq 'male') ? 1 : 0;
+        return "$height $weight $sexBool";
+    }
+    return "";
 }
 
 #====================================================================
