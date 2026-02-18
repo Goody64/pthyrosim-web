@@ -673,9 +673,9 @@ EOF
 
     my $simtime = <<EOF
 Simulation Time:
-<input type="text" id="simtime" name="simtime" value="5">
-Days
-<label title="Simulation Time must be &le; 100 days.">
+<input type="text" id="simtime" name="simtime" value="120">
+<span class="simtime-unit">Hours</span>
+<label id="simtime-info" title="Simulation Time must be &le; 2400 hours (100 days).">
   <img class="info-icon-l" src="../img/info.svg" alt="info">
 </label>
 EOF
@@ -718,6 +718,24 @@ and Green lines. However, you may override this functionality by manually
 setting the color of the next run. Please note that only 1 line per color is
 allowed and subsequent runs replace any existing lines of that color. Please
 also note that example runs are always graphed as Blue.">
+  <img class="info-icon-l" src="../img/info.svg" alt="info">
+</label>
+EOF
+;
+
+    my $timeModeToggle = <<EOF
+Time Scale:
+<span class="btn-group">
+  <label class="btn btn-teal active">
+    <input type="radio" name="timeModeRadio" id="timeModeHours" value="hours" checked>
+    Hours
+  </label>
+  <label class="btn btn-teal">
+    <input type="radio" name="timeModeRadio" id="timeModeDays" value="days">
+    Days
+  </label>
+</span>
+<label title="Toggle the time scale between hours and days for all graphs and inputs.">
   <img class="info-icon-l" src="../img/info.svg" alt="info">
 </label>
 EOF
@@ -834,6 +852,8 @@ $paramEditor
       </div>
 
       <div class="container textcenter pad-t-1em">$simtime</div>
+
+      <div class="container textcenter pad-t-1em">$timeModeToggle</div>
 
       <div class="container textcenter pad-t-1em">$sliderButton</div>
 
