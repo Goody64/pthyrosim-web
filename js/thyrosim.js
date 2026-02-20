@@ -12,6 +12,27 @@
 
 var ThyrosimGraph = new ThyrosimGraph();
 
+// Time mode: 'hours' (default) or 'days'
+// Server data is in hours
+// Days mode divides by 24
+var timeMode = 'hours';
+
+function getTimeDivisor() {
+    return timeMode === 'hours' ? 1 : 24;
+}
+
+function getTimeMultiplier() {
+    return timeMode === 'hours' ? 24 : 1;
+}
+
+function getTimeLabel() {
+    return timeMode === 'hours' ? 'Hours' : 'Days';
+}
+
+function getTimeLabelSingular() {
+    return timeMode === 'hours' ? 'Hour' : 'Day';
+}
+
 //===================================================================
 // DESC:    Validate and submit form. Retrieve JSON plotting data and graph.
 // ARGS:
@@ -35,7 +56,7 @@ function ajax_getplot(exp) {
         if (hasFormError) {
             return false;
         }
-        formdata = $('form').serialize();
+        formdata = serializeForm();
     }
 
     //---------------------------------------------------------
@@ -118,8 +139,9 @@ function graph(hormone,addlabel,initgraph) {
     var w = 420; // width in pixels of the graph
     var h = 130; // height in pixels of the graph
 
-    // Scales
-    var xVal = ThyrosimGraph.getXVal(comp);
+    // Scales — xVal is days by default in the backend. Convert based on timeMode
+    var xValDays = ThyrosimGraph.getXVal(comp);
+    var xVal = xValDays * getTimeMultiplier();
     var yVal = ThyrosimGraph.getYVal(hormone,comp);
     var yEnd = ThyrosimGraph.getEndVal(yVal);
     var x = d3.scale.linear().domain([0,xVal]).range([0,w]);
@@ -198,7 +220,7 @@ function graph(hormone,addlabel,initgraph) {
                 .attr("text-anchor","middle")
                 .attr("transform","translate("+xT2+","+yT2+")")
                 .style("font","16px sans-serif")
-                .text("Days");
+                .text(getTimeLabel());
         }
 
         // Add x-axis to graph
@@ -296,7 +318,7 @@ function graph(hormone,addlabel,initgraph) {
 
             // Line
             var line = d3.svg.line()
-                .x(function(d,i) {return x(valuesT[i]/24);})
+                .x(function(d,i) {return x(valuesT[i]/getTimeDivisor());})
                 .y(function(d,i) {return y(d);});
 
             // Update line
@@ -315,10 +337,10 @@ function graph(hormone,addlabel,initgraph) {
                 .attr("class","dot"+color)
                 .attr("fill","transparent")
                 .attr("r",7)
-                .attr("cx",function(d,i) {return x(valuesT[i]/24);})
+                .attr("cx",function(d,i) {return x(valuesT[i]/getTimeDivisor());})
                 .attr("cy",function(d,i) {return y(d);})
                 .on("mouseover",function(d,i) {
-                    var thisX = valuesT[i]/24;
+                    var thisX = valuesT[i]/getTimeDivisor();
                     var dL = d3.event.pageX+12;
                     var dT = d3.event.pageY;
 
@@ -335,7 +357,7 @@ function graph(hormone,addlabel,initgraph) {
                         .duration(200)
                         .style("opacity",0.8);
                     tooltip.html(hormone+': '+f(d)+'<br>'
-                                +'Time: '+f(thisX))
+                                +'Time ('+getTimeLabel()+'): '+f(thisX))
                         .style("left",dL+"px")
                         .style("top", dT+"px");
                 })
@@ -423,7 +445,7 @@ function validateForm() {
 
     // Only iterate over text inputs in the form
     var fail = false;
-    var maxDay = parseFloat(100.0);
+    var maxTime = parseFloat(2400.0 / getTimeDivisor());
     $.each($("form input[type=text]").serializeArray(), function(i, field) {
 
         // Get current value and use parseFloat for validation
@@ -448,11 +470,11 @@ function validateForm() {
             }
         }
 
-        // 1. Check that start, end, and simtime are <= maxDay
-        // 2. Update simtime with the highest start or end day
+        // 1. Check that start, end, and simtime are <= maxTime
+        // 2. Update simtime with the highest start or end time
         if (/^start-/.test(field.name) || /^end-/.test(field.name) ||
             /^simtime/.test(field.name)) {
-            if (field.value > maxDay) {
+            if (field.value > maxTime) {
                 $('#'+field.name).addClass('error');
                 fail = true;
             } else if (field.value > parseFloat($('#simtime').val())) {
@@ -503,15 +525,15 @@ function executeExperiment(exp) {
     selectRunButton('Blue');                 // Set Blue as exp run
 
     if (exp == "experiment-default") {
-        $('#simtime').val(5);
+        $('#simtime').val(120 / getTimeDivisor());
         tuneDials(100,88,100,88);
     }
 
     if (exp == "experiment-DiJo19-1") {
-        $('#simtime').val(30);
+        $('#simtime').val(720 / getTimeDivisor());
         tuneDials(25,88,25,88);
-        addInputOral('T4',123,1,false,1,30);
-        addInputOral('T3',6.5,1,false,1,30);
+        addInputOral('T4',123,24/getTimeDivisor(),false,24/getTimeDivisor(),720/getTimeDivisor());
+        addInputOral('T3',6.5,24/getTimeDivisor(),false,24/getTimeDivisor(),720/getTimeDivisor());
     }
 
 }
@@ -795,6 +817,128 @@ function resetRun(color) {
 }
 
 //========================================================================
+// TASK:    Functions for hours/days toggle.
+//========================================================================
+
+//===================================================================
+// DESC:    Switch between hours and days display mode. Converts form
+//          values, updates labels, and re-renders graphs.
+// ARGS:
+//   newMode:  'hours' or 'days'
+//===================================================================
+function switchTimeMode(newMode) {
+    if (newMode === timeMode) return;
+    var oldMode = timeMode;
+    timeMode = newMode;
+    convertFormTimes(oldMode, newMode);
+    updateTimeLabels();
+    if (!ThyrosimGraph.initGraph) {
+        graphAll();
+    }
+}
+
+//===================================================================
+// DESC:    Convert all time-related values between hours and days.
+// ARGS:
+//   fromMode: 'hours' or 'days'
+//   toMode:   'hours' or 'days'
+//===================================================================
+function convertFormTimes(fromMode, toMode) {
+    var timeFactor;
+    var doseRateFactor;
+    if (fromMode === 'days' && toMode === 'hours') {
+        timeFactor = 24; // 1 day -> 24 hours
+        doseRateFactor = 1/24; // µg/day -> µg/hr
+    } else if (fromMode === 'hours' && toMode === 'days') {
+        timeFactor = 1/24; // 24 hours -> 1 day
+        doseRateFactor = 24; // µg/hr -> µg/day
+    } else {
+        return;
+    }
+
+    // Convert simulation time
+    var simtime = parseFloat($('#simtime').val());
+    if (!isNaN(simtime)) {
+        $('#simtime').val(parseFloat((simtime * timeFactor)));
+    }
+
+    // Convert time and dose rate inputs
+    $('#input-manager')
+    .find('input[type="text"][name]')
+    .each(function () {
+      const $input = $(this);
+      const name = $input.attr('name');
+  
+      const val = parseFloat($input.val());
+      if (!Number.isFinite(val) || val === 0) return;
+  
+      // Time fields
+      if (/^(start|end|int)-/.test(name)) {
+        $input.val(val * timeFactor);
+        return;
+      }
+  
+      // Dose fields
+      if (!/^dose-/.test(name)) return;
+  
+      const num = name.split('-')[1];
+      const type = $(`#type-${num}`).val();
+  
+      if (type === '3') { // Infusion type
+        $input.val(val * doseRateFactor);
+      }
+    });  
+}
+
+//===================================================================
+// DESC:    Update all time-related labels in the UI to match current
+//          timeMode.
+//===================================================================
+function updateTimeLabels() {
+    var label = getTimeLabelSingular();
+    var labelPlural = getTimeLabel();
+
+    // Update simulation time unit label
+    $('.simtime-unit').text(labelPlural);
+
+    // Update input form labels
+    $('.time-unit-label').text(label);
+    $('.time-unit-label-plural').text(labelPlural);
+
+    // Update infusion dose rate unit
+    $('.infusion-rate-unit').text(getTimeDivisor() === 1 ? 'hr' : 'day');
+
+    // Update x-axis label
+    d3.selectAll('.x-axis-label').text(labelPlural);
+
+    // Update simulation time tooltip
+    if (getTimeDivisor() === 1) {
+        $('#simtime-info').attr('title', 'Simulation Time must be \u2264 2400 hours (100 days).');
+    } else {
+        $('#simtime-info').attr('title', 'Simulation Time must be \u2264 100 days.');
+    }
+}
+
+//===================================================================
+// DESC:    Serialize form data for the backend. The backend always
+//          expects time values in days, so if in hours, convert to days,
+//          serialize, then convert back.
+//===================================================================
+function serializeForm() {
+    var data;
+    if (timeMode === 'hours') {
+        convertFormTimes('hours', 'days');
+        data = $('form').serialize();
+        convertFormTimes('days', 'hours');
+    } else {
+        data = $('form').serialize();
+    }
+    // Send current time mode to the THYROSIM.pm
+    data += '&mode=' + timeMode;
+    return data;
+}
+
+//========================================================================
 // TASK:    Functions for UI interactions and animations.
 //========================================================================
 
@@ -875,17 +1019,18 @@ function OralInput(pit,n) {
          + '  </div>'
          + '  <div class="grid-9-10">'
          + '    <span class="floatL">'
-         + '      Start Day: '
+         + '      Start <span class="time-unit-label">'+getTimeLabelSingular()+'</span>: '
          + '      <input class="inputs" type="text"'
          + '             id="start-'+n+'" name="start-'+n+'">'
          + '    </span>'
          + '    <span class="floatL mar-l-1em">'
          + '      Dosing Interval: '
          + '      <input class="inputs" type="text"'
-         + '             id="int-'+n+'" name="int-'+n+'"> Days'
+         + '             id="int-'+n+'" name="int-'+n+'">'
+         + '      <span class="time-unit-label-plural">'+getTimeLabel()+'</span>'
          + '    </span>'
          + '    <span class="floatL mar-l-1em">'
-         + '      End Day: '
+         + '      End <span class="time-unit-label">'+getTimeLabelSingular()+'</span>: '
          + '      <input class="inputs" type="text"'
          + '             id="end-'+n+'" name="end-'+n+'">'
          + '    </span>'
@@ -926,7 +1071,7 @@ function IVPulseInput(pit,n) {
          + '             id="dose-'+n+'" name="dose-'+n+'"> &micro;g'
          + '    </span>'
          + '    <span class="floatL mar-l-1em">'
-         + '      Start Day: '
+         + '      Start <span class="time-unit-label">'+getTimeLabelSingular()+'</span>: '
          + '      <input class="inputs" type="text"'
          + '             id="start-'+n+'" name="start-'+n+'">'
          + '    </span>'
@@ -964,15 +1109,17 @@ function InfusionInput(pit,n) {
          + '    <span class="floatL">'
          + '      Dose: '
          + '      <input class="inputs" type="text"'
-         + '             id="dose-'+n+'" name="dose-'+n+'"> &micro;g/day'
+         + '             id="dose-'+n+'" name="dose-'+n+'">'
+         + '      &micro;g/<span class="infusion-rate-unit">'
+         +        (getTimeDivisor() === 1 ? 'hr' : 'day') + '</span>'
          + '    </span>'
          + '    <span class="floatL mar-l-1em">'
-         + '      Start Day: '
+         + '      Start <span class="time-unit-label">'+getTimeLabelSingular()+'</span>: '
          + '      <input class="inputs" type="text"'
          + '             id="start-'+n+'" name="start-'+n+'">'
          + '    </span>'
          + '    <span class="floatL mar-l-1em">'
-         + '      End Day: '
+         + '      End <span class="time-unit-label">'+getTimeLabelSingular()+'</span>: '
          + '      <input class="inputs" type="text"'
          + '             id="end-'+n+'" name="end-'+n+'">'
          + '    </span>'
@@ -1438,13 +1585,23 @@ $(function() {
         var label = $(this);
         label.click(function() {
             label.addClass('active');
-            label.children('input').prop('checked',true);
+            label.children('input').prop('checked',true).trigger('change');
             label.siblings().removeClass('active');
         });
     });
 
     // Initialize "Next Run" as Blue
     selectRunButton('Blue');
+
+    // Initialize "Time Mode" as Hours (default time mode)
+    $('#timeModeHours').parent().addClass('active');
+
+    // Toggle time mode
+    $('input[name=timeModeRadio]').change(function() {
+        switchTimeMode($(this).val());
+    });
+
+    updateTimeLabels();
 
 }); // jQuery $(document).ready() functions end
 
@@ -1454,4 +1611,3 @@ $(function() {
 //---------------------------------------------------------
 // Sub-section
 //---------------------------------------------------------
-
