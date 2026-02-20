@@ -913,9 +913,9 @@ function updateTimeLabels() {
 
     // Update simulation time tooltip
     if (getTimeDivisor() === 1) {
-        $('#simtime-info').attr('title', 'Simulation Time must be ≤ 2400 hours (100 days).');
+        $('#simtime-info').attr('title', 'Simulation Time must be \u2264 2400 hours (100 days).');
     } else {
-        $('#simtime-info').attr('title', 'Simulation Time must be ≤ 100 days.');
+        $('#simtime-info').attr('title', 'Simulation Time must be \u2264 100 days.');
     }
 }
 
