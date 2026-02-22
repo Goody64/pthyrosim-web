@@ -459,6 +459,12 @@ function validateForm() {
             $('#'+field.name).addClass('error');
             fail = true;
         }
+        if (field.name === 'weight' || field.name === 'height') {
+            if (field.value <= 0 || field.value > 500) { 
+                $('#'+field.name).addClass('error');
+                fail = true;
+            }
+        }
 
         // Check dials for range
         if (/^dialinput(\d+)/.test(field.name)) {
@@ -1599,6 +1605,11 @@ $(function() {
     // Toggle time mode
     $('input[name=timeModeRadio]').change(function() {
         switchTimeMode($(this).val());
+    });
+
+    $('#weight, #height').on('input', function() {
+        var weight = parseFloat($('#weight').val());
+        var height = parseFloat($('#height').val());
     });
 
     updateTimeLabels();
