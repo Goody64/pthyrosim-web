@@ -886,7 +886,63 @@ footer {
   text-align: center;
   width: 1em;
 }
+.graph-and-demographics-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2em;
+  width: 100%;
+}
 
+.demographics-section {
+  display: flex;
+  flex-direction: row;
+  background-color: #fafafa;
+  padding: 1.5em;
+  border-radius: 0.25em;
+  box-shadow: 0 0.125em 0.25em rgba(0,0,0,0.1); 
+}
+
+.demographics-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+}
+
+.demographics-inputs label {
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.demographics-inputs .inputs {
+  margin-left: 0.5em;
+  width: 5em;
+}
+
+.graphs-section {
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+.stick-figure-container {
+  display: flex;
+  align-items: center;   
+  justify-content: center;
+  min-width: 100px;       
+  padding-left: 2em;
+  margin-left: 1em;
+  border-left: 2px solid #e2e6ea;
+}
+
+#stick-figure-img {
+  height: 150px;
+  width: auto;            
+  display: block;
+  -webkit-transition: height 0.4s ease-in-out;
+  transition: height 0.4s ease-in-out;
+}
 /*--------------------------------------------------
 * Responsive design
 *--------------------------------------------------*/
