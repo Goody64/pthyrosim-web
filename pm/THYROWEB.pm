@@ -794,7 +794,9 @@ $paramEditor
 
     <!-- Panel Right -->
     <div class="grid-1-2 m-grid-1-1">
+      <div class="graph-and-demographics-wrapper">
 
+        <div class="graphs-section">
       <!-- Button Row -->
       <div class="container button-row">
         Toggle:
@@ -816,7 +818,31 @@ $paramEditor
         <div id="TSHgraph" class="show d3chart"></div>
       </div>
       <!-- Graphs end -->
+        </div>
 
+        <!-- Demographics -->
+        <div class="demographics-section">
+          <div class="demographics-title">Patient</div>
+          <div class="stick-figure-container">
+            <img id="stick-figure-img" src="../img/stick-figure.svg" alt="Stick figure">
+          </div>
+          <div class="demographics-inputs">
+            <label for="weight">Weight (kg)</label>
+            <input type="number" name="weight" id="weight" class="inputs" min="1" max="500" step="0.1" placeholder="70">
+            <label for="height">Height (m)</label>
+            <input type="number" name="height" id="height" class="inputs" min="0.1" max="3" step="0.01" placeholder="1.75">
+            <label>Sex</label>
+            <span class="btn-group">
+              <label class="btn btn-teal active">
+                <input type="radio" name="sex" value="M" checked> Male
+              </label>
+              <label class="btn btn-teal">
+                <input type="radio" name="sex" value="F"> Female
+              </label>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Panel Right end -->
 

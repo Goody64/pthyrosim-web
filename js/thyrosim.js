@@ -1611,7 +1611,7 @@ $(function() {
         var weight = parseFloat($('#weight').val());
         var height = parseFloat($('#height').val());
     });
-
+    
     updateTimeLabels();
 
 }); // jQuery $(document).ready() functions end

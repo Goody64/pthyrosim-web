@@ -589,7 +589,7 @@ input[type=checkbox] {
 
 #wrapper {
   margin: 0 auto;
-  width: 1050px;
+  width: 1250px;
 }
 header {
   background-color: #fafafa;
@@ -705,11 +705,25 @@ footer {
 *--------------------------------------------------*/
 
 /* Main layout */
+#container-top {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+}
 #container-top>div {
   padding: 0.625em;
 }
+/* Left column: fixed 525px = original (50% of 1050px) so diagram+inputs are pixel-identical to original for animations */
 #container-top-left {
+  flex: 0 0 525px;
+  width: 525px;
   height: 33.2em;
+}
+/* Right column: graphs + patient fill remaining space */
+#container-top > .grid-1-2:last-child {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 33.2em;
 }
 #container-bot>div {
   padding: 1.25em;
@@ -889,57 +903,107 @@ footer {
 .graph-and-demographics-wrapper {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: flex-start;
-  gap: 2em;
+  gap: 1em;
   width: 100%;
+  min-height: 33.2em;
 }
 
 .demographics-section {
   display: flex;
-  flex-direction: row;
-  background-color: #fafafa;
-  padding: 1.5em;
-  border-radius: 0.25em;
-  box-shadow: 0 0.125em 0.25em rgba(0,0,0,0.1); 
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  padding: 0.5em 0.5em;
+  border-radius: 0.35em;
+  border: 1px solid #e2e6ea;
+  box-shadow: 0 0.0625em 0.1875em rgba(0,0,0,0.06);
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 140px;
+  min-width: 140px;
+}
+
+.demographics-title {
+  font-size: 0.85em;
+  font-weight: bold;
+  color: #17a2b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35em;
+  align-self: center;
 }
 
 .demographics-inputs {
   display: flex;
   flex-direction: column;
-  gap: 0.8em;
+  gap: 0.65em;
 }
 
 .demographics-inputs label {
-  font-size: 0.9em;
-  font-weight: bold;
+  font-size: 0.875em;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: -0.2em;
+}
+
+/* Sex toggle: white text like Hours/Days */
+.demographics-inputs .btn-group label.btn-teal {
+  color: white;
 }
 
 .demographics-inputs .inputs {
-  margin-left: 0.5em;
-  width: 5em;
+  margin-left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3em 0.4em;
+  border: 1px solid #ced4da;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+}
+
+.demographics-inputs .inputs:focus {
+  border-color: #17a2b8;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(23,162,184,.25);
+}
+
+.demographics-inputs .btn-group {
+  margin-left: 0;
+  margin-top: 0.15em;
+  font-size: 0.85em;
 }
 
 .graphs-section {
-  flex-grow: 1; 
+  flex-grow: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1em;
 }
+
+/* Separation between toggle row and graphs to avoid overlap */
+.graphs-section .button-row {
+  margin-bottom: 0.5em;
+  flex-shrink: 0;
+}
+
 .stick-figure-container {
   display: flex;
-  align-items: center;   
+  align-items: center;
   justify-content: center;
-  min-width: 100px;       
-  padding-left: 2em;
-  margin-left: 1em;
-  border-left: 2px solid #e2e6ea;
+  padding-bottom: 0.4em;
+  margin-bottom: 0.4em;
+  border-bottom: 1px solid #dee2e6;
 }
 
 #stick-figure-img {
-  height: 150px;
-  width: auto;            
+  height: 100px;
+  width: auto;
   display: block;
+  opacity: 0.85;
   -webkit-transition: height 0.4s ease-in-out;
   transition: height 0.4s ease-in-out;
 }
