@@ -927,9 +927,9 @@ function convertFormUnits(fromMode, toMode) {
 
     if (fromMode === 'metric' && toMode === 'imperial') {
         // kg to lbs
-        if (!isNaN(weightVal)) $weight.val((weightVal * 2.20462).toFixed(2));
+        if (!isNaN(weightVal)) var imperialWeight = weightVal * 2.20462; $weight.val(imperialWeight.toFixed(2))
         // meters to total inches
-        if (!isNaN(heightVal)) $height.val((heightVal * 39.3701).toFixed(2));
+        if (!isNaN(heightVal)) var imperialHeight = heightVal * 39.3701; $height.val(imperialHeight.toFixed(2));
         
     } else if (fromMode === 'imperial' && toMode === 'metric') {
         // lbs to kg
@@ -1619,10 +1619,6 @@ $(function() {
     $('input[name=unitModeRadio]').change(function() {
         switchUnitMode($(this).val());
         });
-    $('#weight, #height').on('input', function() {
-        var weight = parseFloat($('#weight').val());
-        var height = parseFloat($('#height').val());
-    });
         
         // Set defaultValue property
         $(d).prop('defaultValue',$(s).slider('value'));
