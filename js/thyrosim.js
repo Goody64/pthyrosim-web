@@ -11,6 +11,8 @@
 //========================================================================
 
 var ThyrosimGraph = new ThyrosimGraph();
+// metric mode: default for height and weight 
+var unitMode = 'metric';
 
 // Time mode: 'hours' (default) or 'days'
 // Server data is in hours
@@ -897,6 +899,53 @@ function convertFormTimes(fromMode, toMode) {
 }
 
 //===================================================================
+// DESC:    Switch between metric and imperial display mode. 
+//          Converts form values and updates labels.
+// ARGS:
+//   newMode:  'metric' or 'imperial'
+//===================================================================
+function switchUnitMode(newMode) {
+    if (newMode === unitMode) return;
+    var oldMode = unitMode;
+    unitMode = newMode;
+    
+    convertFormUnits(oldMode, newMode);
+    // updateUnitLabels(); // Optional: Create this to update UI text (kg -> lbs)
+}
+
+//===================================================================
+// Convert height and weight values.
+// Weight: kg <-> lbs
+// Height: meters <-> inches 
+//===================================================================
+function convertFormUnits(fromMode, toMode) {
+    var $weight = $('#weight');
+    var $height = $('#height');
+    
+    var weightVal = parseFloat($weight.val());
+    var heightVal = parseFloat($height.val());
+
+    if (fromMode === 'metric' && toMode === 'imperial') {
+        // kg to lbs
+        if (!isNaN(weightVal)) $weight.val((weightVal * 2.20462).toFixed(2));
+        // meters to total inches
+        if (!isNaN(heightVal)) $height.val((heightVal * 39.3701).toFixed(2));
+        
+    } else if (fromMode === 'imperial' && toMode === 'metric') {
+        // lbs to kg
+        if (!isNaN(weightVal)) $weight.val((weightVal / 2.20462).toFixed(2));
+        // inches to meters
+        if (!isNaN(heightVal)) $height.val((heightVal / 39.3701).toFixed(2));
+    }
+}
+
+function inchesToFeetAndInches(inches) {
+    var feet = Math.floor(inches / 12);
+    var remainingInches = Math.round(inches % 12);
+    return feet + "'" + remainingInches + '"';
+}
+
+//===================================================================
 // DESC:    Update all time-related labels in the UI to match current
 //          timeMode.
 //===================================================================
@@ -1567,6 +1616,14 @@ $(function() {
             // Change dialinput's value to match slider's value
             slide:   function(event,ui) { $(d).val(ui.value); }
         });
+    $('input[name=unitModeRadio]').change(function() {
+        switchUnitMode($(this).val());
+        });
+    $('#weight, #height').on('input', function() {
+        var weight = parseFloat($('#weight').val());
+        var height = parseFloat($('#height').val());
+    });
+        
         // Set defaultValue property
         $(d).prop('defaultValue',$(s).slider('value'));
         // Changes slider value when changing dialinput
