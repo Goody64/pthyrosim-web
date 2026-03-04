@@ -927,9 +927,13 @@ function convertFormUnits(fromMode, toMode) {
 
     if (fromMode === 'metric' && toMode === 'imperial') {
         // kg to lbs
-        if (!isNaN(weightVal)) var imperialWeight = weightVal * 2.20462; $weight.val(imperialWeight.toFixed(2))
+        if (!isNaN(weightVal)){
+            var imperialWeight = weightVal * 2.20462; $weight.val(imperialWeight.toFixed(2))
+        }
         // meters to total inches
-        if (!isNaN(heightVal)) var imperialHeight = heightVal * 39.3701; $height.val(imperialHeight.toFixed(2));
+        if (!isNaN(heightVal)){
+            var imperialHeight = heightVal * 39.3701; $height.val(imperialHeight.toFixed(2));
+        }
         
     } else if (fromMode === 'imperial' && toMode === 'metric') {
         // lbs to kg
@@ -942,6 +946,11 @@ function convertFormUnits(fromMode, toMode) {
 function inchesToFeetAndInches(inches) {
     var feet = Math.floor(inches / 12);
     var remainingInches = Math.round(inches % 12);
+    if(remainingInches == 12)
+    {
+        feet+=1;
+        remainingInches = 0;
+    }
     return feet + "'" + remainingInches + '"';
 }
 
