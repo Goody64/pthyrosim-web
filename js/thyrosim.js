@@ -19,6 +19,18 @@ var unitMode = 'metric';
 // Days mode divides by 24
 var timeMode = 'hours';
 
+// Unit conversion constants
+var IN_PER_M  = 39.3701;  // inches per meter
+var LB_PER_KG = 2.20462;  // pounds per kilogram
+var M_PER_FT  = 0.3048;   // meters per foot
+var IN_PER_FT = 12;       // inches per foot
+var MAX_WEIGHT_KG = 500;  // max allowed weight in kg
+var MAX_HEIGHT_M  = 3;    // max allowed height in m
+
+// Height/weight in metric (prevent rounding errors)
+var heightMeters = NaN;
+var weightKg = NaN;
+
 function getTimeDivisor() {
     return timeMode === 'hours' ? 1 : 24;
 }
@@ -449,6 +461,16 @@ function validateForm() {
     var fail = false;
     var maxTime = parseFloat(2400.0 / getTimeDivisor());
     $.each($("form input[type=text]").serializeArray(), function(i, field) {
+        if (field.name === 'height' && $('#height-unit').val() === 'ft') {
+            var hMeters = convertInFtToMeters($('#height').val(), 'ft');
+            if (isNaN(hMeters) || hMeters <= 0) {
+                $('#height').addClass('error');
+                fail = true;
+            } else {
+                heightMeters = hMeters;
+            }
+            return;
+        }
 
         // Get current value and use parseFloat for validation
         field.value = parseFloat($('#'+field.name).val());
@@ -461,9 +483,20 @@ function validateForm() {
             $('#'+field.name).addClass('error');
             fail = true;
         }
-        if (field.name === 'weight' || field.name === 'height') {
-            if (field.value <= 0 || field.value > 500) { 
-                $('#'+field.name).addClass('error');
+
+        // Validate upper limits
+        if (field.name === 'weight') {
+            var wMax = $('#weight-unit').val() === 'lb' ? MAX_WEIGHT_KG * LB_PER_KG : MAX_WEIGHT_KG;
+            if (field.value <= 0 || field.value > wMax) {
+                $('#weight').addClass('error');
+                fail = true;
+            }
+        }
+        if (field.name === 'height') {
+            var hUnit = $('#height-unit').val();
+            var hMax = hUnit === 'in' ? MAX_HEIGHT_M * IN_PER_M : MAX_HEIGHT_M;
+            if (field.value <= 0 || field.value > hMax) {
+                $('#height').addClass('error');
                 fail = true;
             }
         }
@@ -878,7 +911,7 @@ function convertFormTimes(fromMode, toMode) {
       const name = $input.attr('name');
   
       const val = parseFloat($input.val());
-      if (!Number.isFinite(val) || val === 0) return;
+      if (!Number.isFinite(val)) return;
   
       // Time fields
       if (/^(start|end|int)-/.test(name)) {
@@ -921,37 +954,54 @@ function switchUnitMode(newMode) {
 function convertFormUnits(fromMode, toMode) {
     var $weight = $('#weight');
     var $height = $('#height');
-    
-    var weightVal = parseFloat($weight.val());
-    var heightVal = parseFloat($height.val());
 
+    // Initialize weight/height values in metric
+    if (isNaN(weightKg) || weightKg <= 0) {
+        var wVal = parseFloat($weight.val());
+        if (!isNaN(wVal)) weightKg = (fromMode === 'imperial') ? wVal / LB_PER_KG : wVal;
+    }
+    if (isNaN(heightMeters) || heightMeters <= 0) {
+        var hu = $('#height-unit').val();
+        heightMeters = convertInFtToMeters($height.val().trim(), hu);
+    }
+
+    // Convert units (metric -> imperial or imperial -> metric)
     if (fromMode === 'metric' && toMode === 'imperial') {
-        // kg to lbs
-        if (!isNaN(weightVal)){
-            var imperialWeight = weightVal * 2.20462; $weight.val(imperialWeight.toFixed(2))
-        }
-        // meters to total inches
-        if (!isNaN(heightVal)){
-            var imperialHeight = heightVal * 39.3701; $height.val(imperialHeight.toFixed(2));
-        }
-        
+        if (!isNaN(weightKg)) $weight.val((weightKg * LB_PER_KG).toFixed(2));
+        if (!isNaN(heightMeters)) $height.val((heightMeters * IN_PER_M).toFixed(2));
     } else if (fromMode === 'imperial' && toMode === 'metric') {
-        // lbs to kg
-        if (!isNaN(weightVal)) $weight.val((weightVal / 2.20462).toFixed(2));
-        // inches to meters
-        if (!isNaN(heightVal)) $height.val((heightVal / 39.3701).toFixed(2));
+        if (!isNaN(weightKg)) $weight.val(weightKg.toFixed(2));
+        if (!isNaN(heightMeters)) $height.val(heightMeters.toFixed(2));
     }
 }
 
 function inchesToFeetAndInches(inches) {
-    var feet = Math.floor(inches / 12);
-    var remainingInches = Math.round(inches % 12);
-    if(remainingInches == 12)
+    var feet = Math.floor(inches / IN_PER_FT);
+    var remainingInches = Math.round(inches % IN_PER_FT);
+    if(remainingInches == IN_PER_FT)
     {
         feet+=1;
         remainingInches = 0;
     }
     return feet + "'" + remainingInches + '"';
+}
+
+// Parse "5'10"", "5'10", or 5.75 feet -> meters
+function ftToMeters(str) {
+    str = String(str).trim();
+    var m = str.match(/^(\d+(?:\.\d+)?)'\s*(\d+(?:\.\d+)?)["”]?$/);
+    if (m) return (parseFloat(m[1]) * IN_PER_FT + parseFloat(m[2])) / IN_PER_M;
+    var v = parseFloat(str);
+    return isNaN(v) ? NaN : v * M_PER_FT;
+}
+
+// Updates value from inches/ft to meters
+function convertInFtToMeters(rawVal, unit) {
+    if (unit === 'ft') return ftToMeters(rawVal);
+    var v = parseFloat(rawVal);
+    if (isNaN(v)) return NaN;
+    if (unit === 'in') return v / IN_PER_M;
+    return v;
 }
 
 //===================================================================
@@ -990,6 +1040,16 @@ function updateTimeLabels() {
 //===================================================================
 function serializeForm() {
     var data;
+    // Send weight/height in metric (kg, m) to backend  
+    var $w = $('#weight'), $h = $('#height');
+    var wu = $('#weight-unit').val();
+    var hu = $('#height-unit').val();
+    var wOrig = $w.val(), hOrig = $h.val();
+    var wVal = parseFloat(wOrig);
+    var mW = !isNaN(weightKg) ? weightKg : (!isNaN(wVal) && wu === 'lb' ? wVal / LB_PER_KG : wVal);
+    if (!isNaN(mW)) $w.val(mW);
+    var mH = !isNaN(heightMeters) ? heightMeters : convertInFtToMeters(hOrig, hu);
+    if (!isNaN(mH)) $h.val(mH);
     if (timeMode === 'hours') {
         convertFormTimes('hours', 'days');
         data = $('form').serialize();
@@ -997,6 +1057,7 @@ function serializeForm() {
     } else {
         data = $('form').serialize();
     }
+    $w.val(wOrig); $h.val(hOrig);
     // Send current time mode to the THYROSIM.pm
     data += '&mode=' + timeMode;
     return data;
@@ -1669,11 +1730,65 @@ $(function() {
         switchTimeMode($(this).val());
     });
 
-    $('#weight, #height').on('input', function() {
-        var weight = parseFloat($('#weight').val());
-        var height = parseFloat($('#height').val());
+    $('#weight').on('input', function() {
+        var wVal = parseFloat($(this).val());
+        if (!isNaN(wVal) && wVal > 0) weightKg = ($('#weight-unit').val() === 'lb') ? wVal / LB_PER_KG : wVal;
     });
-    
+
+    $('#height').on('input', function() {
+        var m = convertInFtToMeters($(this).val().trim(), $('#height-unit').val());
+        if (!isNaN(m) && m > 0) heightMeters = m;
+    });
+    // Weight unit dropdown
+    $('#weight-unit').on('change', function() {
+        var newUnit = $(this).val();
+        var oldUnit = $(this).data('prev');
+        // Use weight in kg for conversions (avoid rounding errors)
+        if (isNaN(weightKg) || weightKg <= 0) {
+            var val = parseFloat($('#weight').val());
+            if (!isNaN(val)) weightKg = (oldUnit === 'lb') ? val / LB_PER_KG : val;
+        }
+        if (!isNaN(weightKg) && weightKg > 0) {
+            $('#weight').val(newUnit === 'lb' ? (weightKg * LB_PER_KG).toFixed(2) : weightKg.toFixed(2));
+        }
+        var wMax = newUnit === 'lb' ? (MAX_WEIGHT_KG * LB_PER_KG).toFixed(2) : MAX_WEIGHT_KG;
+        $('#weight').attr('placeholder', newUnit === 'lb' ? '154' : '70')
+                    .attr('min', 0.1).attr('max', wMax);
+        $(this).data('prev', newUnit);
+    });
+
+    // Height unit dropdown
+    $('#height-unit').on('change', function() {
+        var newUnit = $(this).val();
+        var oldUnit = $(this).data('prev');
+        // Use height in meters for conversions (avoid rounding errors)
+        if (isNaN(heightMeters) || heightMeters <= 0) {
+            var rawVal = $('#height').val().trim();
+            heightMeters = convertInFtToMeters(rawVal, oldUnit);
+        }
+        // Update field type, value, and limits for the new unit
+        var placeholders = { m: '1.75', ft: "5'9\"", in: '68.9' };
+        if (!isNaN(heightMeters) && heightMeters > 0) {
+            if (newUnit === 'm') {
+                $('#height').attr('type','number').val(heightMeters.toFixed(2))
+                            .attr('min', 0.1).attr('max', MAX_HEIGHT_M);
+            } else if (newUnit === 'ft') {
+                $('#height').attr('type','text').val(inchesToFeetAndInches(heightMeters * IN_PER_M))
+                            .removeAttr('min').removeAttr('max');
+            } else if (newUnit === 'in') {
+                $('#height').attr('type','number').val((heightMeters * IN_PER_M).toFixed(2))
+                            .attr('min', 3.9).attr('max', (MAX_HEIGHT_M * IN_PER_M).toFixed(2));
+            }
+        } else {
+            $('#height').attr('type', newUnit === 'ft' ? 'text' : 'number');
+            if (newUnit !== 'ft') $('#height').attr('min', newUnit === 'm' ? 0.1 : 3.9)
+                                              .attr('max', newUnit === 'm' ? MAX_HEIGHT_M : (MAX_HEIGHT_M * IN_PER_M).toFixed(2));
+            else $('#height').removeAttr('min').removeAttr('max');
+        }
+        $('#height').attr('placeholder', placeholders[newUnit]);
+        $(this).data('prev', newUnit);
+    });
+
     updateTimeLabels();
 
 }); // jQuery $(document).ready() functions end
