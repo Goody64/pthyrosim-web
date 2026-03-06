@@ -827,10 +827,23 @@ $paramEditor
             <img id="stick-figure-img" src="../img/stick-figure.svg" alt="Stick figure">
           </div>
           <div class="demographics-inputs">
-            <label for="weight">Weight (kg)</label>
-            <input type="number" name="weight" id="weight" class="inputs" min="1" max="500" step="0.1" placeholder="70">
-            <label for="height">Height (m)</label>
-            <input type="number" name="height" id="height" class="inputs" min="0.1" max="3" step="0.01" placeholder="1.75">
+            <label for="weight">Weight</label>
+            <div class="unit-input-row">
+              <input type="number" name="weight" id="weight" class="inputs" min="1" max="500" step="0.1" placeholder="70">
+              <select id="weight-unit" class="inputs unit-select">
+                <option value="kg">kg</option>
+                <option value="lb">lb</option>
+              </select>
+            </div>
+            <label for="height">Height</label>
+            <div class="unit-input-row">
+              <input type="number" name="height" id="height" class="inputs" min="0.1" max="3" step="0.01" placeholder="1.75">
+              <select id="height-unit" class="inputs unit-select">
+                <option value="m">m</option>
+                <option value="ft">ft</option>
+                <option value="in">in</option>
+              </select>
+            </div>
             <label>Sex</label>
             <span class="btn-group">
               <label class="btn btn-teal active">
