@@ -463,7 +463,7 @@ function validateForm() {
     $.each($("form input[type=text]").serializeArray(), function(i, field) {
         if (field.name === 'height' && $('#height-unit').val() === 'ft') {
             var hMeters = convertInFtToMeters($('#height').val(), 'ft');
-            if (isNaN(hMeters) || hMeters <= 0) {
+            if (isNaN(hMeters) || hMeters <= 0 || hMeters > MAX_HEIGHT_M) {
                 $('#height').addClass('error');
                 fail = true;
             } else {
@@ -1739,6 +1739,11 @@ $(function() {
         var m = convertInFtToMeters($(this).val().trim(), $('#height-unit').val());
         if (!isNaN(m) && m > 0) heightMeters = m;
     });
+    
+    // Initialize 'prev' with current selected unit
+    $('#weight-unit').data('prev', $('#weight-unit').val());
+    $('#height-unit').data('prev', $('#height-unit').val());
+
     // Weight unit dropdown
     $('#weight-unit').on('change', function() {
         var newUnit = $(this).val();
