@@ -12,210 +12,124 @@ import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 import org.apache.commons.math3.ode.sampling.StepHandler;
 import org.apache.commons.math3.ode.sampling.StepInterpolator;
 
+/**
+ * UpdatedThyrosim – patient-specific p-THYROSIM kernel.
+ *
+ * Parameters are taken directly from the Julia reference notebook
+ * (Clean_Code_LT43DosingApp.ipynb). The kernel supports:
+ *   - Hours mode  (simulationLength ≤ 100 days, time axis in hours)
+ *   - Days  mode  (simulationLength ≤ 1000 days, time axis in days)
+ * selected via the {@code mode} flag ("hours" or "days").
+ *
+ * Public API entry point: {@link #simulate}.
+ * Public output container:  {@link SimResult}.
+ */
+
 public class Thyrosim implements FirstOrderDifferentialEquations
 {
 
-    private double p1,  p2,  p3,  p4,  p5,  p6,  p7,  p8,  p9,  p10;
-    private double p11, p12, p13, p14, p15, p16, p17, p18, p19, p20;
-    private double p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
-    private double p31, p32, p33, p34, p35, p36, p37, p38, p39, p40;
-    public double p41, p42, p43, p44, p45, p46, p47, p48;
-    private double kdelay, u1, u4, d1, d2, d3, d4;
+    // constants from the notebook
+    private static final double MW_T4  = 777.0;
+    private static final double MW_T3  = 651.0;
+    private static final double TSH_CONV = 5.6;
+    private static final double KDELAY = 5.0 / 8.0;
 
-    public Plotter t4_plotter, t3_plotter, tsh_plotter, ft4_plotter, ft3_plotter;
-
+    private final double[] p;
     // Functions that Java ODE solver needs
     // Declare parameters
-    public Thyrosim(double dial1, double dial2, double dial3, double dial4,
-                    double inf1,  double inf4,
-                    double _kdelay,
-                    double _p1,  double _p2,  double _p3,  double _p4,
-                    double _p5,  double _p6,  double _p7,  double _p8,
-                    double _p9,  double _p10, double _p11, double _p12,
-                    double _p13, double _p14, double _p15, double _p16,
-                    double _p17, double _p18, double _p19, double _p20,
-                    double _p21, double _p22, double _p23, double _p24,
-                    double _p25, double _p26, double _p27, double _p28,
-                    double _p29, double _p30, double _p31, double _p32,
-                    double _p33, double _p34, double _p35, double _p36,
-                    double _p37, double _p38, double _p39, double _p40,
-                    double _p41, double _p42, double _p43, double _p44,
-                    double _p45, double _p46, double _p47, double _p48)
-    {
-        u1 = inf1;  // Infusion into plasma T4
-        u4 = inf4;  // Infusion into plasma T3
-        d1 = dial1; // Dial values
-        d2 = dial2;
-        d3 = dial3;
-        d4 = dial4;
 
-        kdelay = _kdelay;
-        p1     = _p1;
-        p2     = _p2;
-        p3     = _p3;
-        p4     = _p4;
-        p5     = _p5;
-        p6     = _p6;
-        p7     = _p7;
-        p8     = _p8;
-        p9     = _p9;
-        p10    = _p10;
-        p11    = _p11;
-        p12    = _p12;
-        p13    = _p13;
-        p14    = _p14;
-        p15    = _p15;
-        p16    = _p16;
-        p17    = _p17;
-        p18    = _p18;
-        p19    = _p19;
-        p20    = _p20;
-        p21    = _p21;
-        p22    = _p22;
-        p23    = _p23;
-        p24    = _p24;
-        p25    = _p25;
-        p26    = _p26;
-        p27    = _p27;
-        p28    = _p28;
-        p29    = _p29;
-        p30    = _p30;
-        p31    = _p31;
-        p32    = _p32;
-        p33    = _p33;
-        p34    = _p34;
-        p35    = _p35;
-        p36    = _p36;
-        p37    = _p37;
-        p38    = _p38;
-        p39    = _p39;
-        p40    = _p40;
-        p41    = _p41;
-        p42    = _p42;
-        p43    = _p43;
-        p44    = _p44;
-        p45    = _p45;
-        p46    = _p46;
-        p47    = _p47;
-        p48    = _p48;
-
-        // Post param load modification
-        p44 = p44 * d2;
-        p46 = p46 * d4;
-
-        t4_plotter = new Plotter("T4", "days", "micrograms/L");
-        t3_plotter = new Plotter("T3", "days", "micrograms/L");
-        tsh_plotter = new Plotter("TSH", "days", "milliunits/L");
-        ft4_plotter = new Plotter("FT4", "days", "nanograms/L");
-        ft3_plotter = new Plotter("FT3", "days", "nanograms/L");
-
+    // Constructor – builds the ODE object from a fully-populated parameter array
+    // Parameters (index matches Julia p[1..82], stored 0-based here)
+   private Thyrosim(double[] params) {
+        this.p = params;
     }
-
+    @Override
     public int getDimension()
     {
         return 19;
     }
 
-    public void computeDerivatives(double t, double[] q, double[] qDot)
-    {
-        
-        double q4F, q1F, SR3, SR4, fCIRC, SRTSH, fdegTSH, fLAG, f4, NL;
+    @Override
+    public void computeDerivatives(double t, double[] q, double[] dq) {
 
-        // scale compartment sizes. in thyrosimIM compartment sizes were all 1. why?
-        double p69 = 1; // PV_ratio scalar
+        double plasma_volume_ratio = p(69);
 
-        // Sean and Jaden 3/5/26
-        double recScalar69 = 1 / p69;
-        // Sean and Jaden 3/5/26
-        double q1 = q[0] * recScalar69;   //   scale t4 by 1/PV ratio
-        double q2 = q[1];    //   t4fast pool
-        double q3 = q[2];    //   t4slow pool
-        double q4 = q[3] * recScalar69;   //   scale t3 plasma by 1/PV ratio
-        double q5 = q[4];  //   t3fast pool
-        double q6 = q[5];  //   t3slow pool
-        double q7 = q[6] * recScalar69;   //   scale TSH plasma by 1/PV ratio
+        // Scale plasma compartments by 1/Vp_ratio (matches Julia q1 = q[1]/p[69])
+        double q1 = q[0] / p(69);
+        double q2 = q[1];
+        double q3 = q[2];
+        double q4 = q[3] / p(69);
+        double q5 = q[4];
+        double q6 = q[5];
+        double q7 = q[6] / p(69);
 
-        // VARIABLES VINH INSERTING DURING CONVERSION PROCESS
-        // may already exist in code somewhere, must ask later
-        double p49 = 3.001011022378; //  K_circ        umol
-        double p50 = 3.094711690204; // K_srTSH       umol
-        double p51 = 5.674773816316; // n_hillcirc    scalar (hill exponent)
-        double p52 = 6.290803221796; // m_hillcirc    scalar (hill exponent)
-        double p53 = 8.498343729591; // K_f4          umol
-        double p54 = 14.36664496926; // l_hillf3      scalar (hill exponent)
+        // Clamp negatives (matches Julia adhoc fix)
+        for (int i = 0; i < q.length; i++) {
+            if (q[i] < 0) q[i] = 0;
+        }
 
-        // Auxillary equations
-        // speed up due to repetition
-        double q1Squared = Math.pow(q1, 2);
-        double q1Cubed = Math.pow(q1, 3);
-        double T3Blagtonhilleire = Math.pow(q[8], p51);
-        double KSR_tshmhillTSH = Math.pow(p50, p52);
-        double TwoT3B11 = Math.pow(q[7], 11);
-        double Kf4lhillf3 = Math.pow(p53, p54);
+        // Auxiliary equations
+        double q1Sq = q1 * q1;
+        double q1Cu = q1Sq * q1;
+        double q4F  = (p(24) + p(25)*q1 + p(26)*q1Sq + p(27)*q1Cu) * q4; // FT3p
+        double q1F  = (p(7)  + p(8) *q1 + p(9) *q1Sq + p(10)*q1Cu) * q1; // FT4p
 
-        q4F = (p24 + p25 * q1 + p26 * q1Squared + p27 * q1Cubed) * q4; // FT3p
-        q1F = (p7 + p8 * q1 + p9 * q1Squared + p10 * q1Cubed) * q1; // FT4p
-        SR3 = (p19 * q[18]) * d3; // Brain delay
-        SR4 = (p1 * q[18]) * d1; // Brain delay
-        fCIRC = T3Blagtonhilleire / ((T3Blagtonhilleire + Math.pow(p49, p51)));
-        SRTSH = (p30 + p31 * fCIRC * Math.sin(2 * Math.PI * t - p33)) * (KSR_tshmhillTSH / (KSR_tshmhillTSH + Math.pow(q[8], p52)));
-        fdegTSH = p34 + p35/(p36 + q7);
-        fLAG = p41 + 2 * TwoT3B11/(Math.pow(p42,11) + TwoT3B11);
-        f4 = p37 * (1 + 5 * (Kf4lhillf3) / (Kf4lhillf3 + Math.pow(q[7], p54)));
-        NL = p13/(p14+q2);
+        // Secretion rates – include dial factors p[57] (d1) and p[59] (d3)
+        double SR4 = p(1) * p(57) * q[18];   // T4 secretion (brain delay, dial1)
+        double SR3 = p(19) * p(59) * q[18];  // T3 secretion (brain delay, dial3)
 
-        // ODEs
-        double plasma_volume_ratio = 1; // PV_ratio scalar
-        double p57 = d1; //dial[1] # controls T4 secretion rate
-        double p58 = d2;  //dial[2] # controls T4 absorption rate
-        double p59 = d3; //dial[3] # controls T3 secretion rate
-        double p60 = d4; //dial[4] # controls T3 absorption rate
-        double p61 = 5.003761571969437;
-        double p62 = 0.11122955089297369;
-        double p63 = 0.4;
-        double p64 = 0.1;
-        double p65 = 21.82854404275587;
-        double p66 = 22.99050845201536;
+        // Hill-function terms
+        double q9p51 = Math.pow(q[8], p(51));
+        double p49p51 = Math.pow(p(49), p(51));
+        double fCIRC = q9p51 / (q9p51 + p49p51);
 
-        double p67 = 1.0;
+        double p50p52 = Math.pow(p(50), p(52));
+        double q9p52  = Math.pow(q[8], p(52));
+        // SRTSH: note Julia uses pi/12 (circadian), time t is in hours internally
+        double SRTSH  = (p(30) + p(31) * fCIRC * Math.sin(Math.PI / 12.0 * t - p(33)))
+                        * (p50p52 / (p50p52 + q9p52));
 
-        double p78 = 1.7608716659237555;
-        double p79 = 1.6696106891941103;
+        double fdegTSH = p(34) + p(35) / (p(36) + q7);
 
-        // # clearance scale (male / female)
-        double p80 = 1.0499391485135692; //# male clearance (fitted)
+        double q8p11   = Math.pow(q[7], 11);
+        double p42p11  = Math.pow(p(42), 11);
+        double fLAG    = p(41) + 2.0 * q8p11 / (p42p11 + q8p11);
 
-        // # Initialize infusion parameters
-        double p81 = 0.0; // T4 infusion
-        double p82 = 0.0; // T3 infusion
+        double p53p54  = Math.pow(p(53), p(54));
+        double q8p54   = Math.pow(q[7], p(54));
+        double f4      = p(37) * (1.0 + 5.0 * p53p54 / (p53p54 + q8p54));
 
-        // double p59 = d3; //dial[3]
-        // missing p[80] as this was removed (for thyroSOLVER) (p[80] = ivT4 dose)
-        qDot[0] = p81 + (SR4 + p3 * q2 + p4 * q3 - (p5 + p6) * q1F) * p69 + p11 * q[10];  // T4dot (need to remove u1) unmod
-        qDot[1] = (p6 * q1F - (p3 + p12 + NL) * q2); //* p75;  // T4fast   unmod                           // T4fast
-        qDot[2] = (p5 * q1F - (p4 + p15 / (p16 + q3) + p17 / (p18 + q3)) * q3); // * p74;  // T4slow  unmod
-        // missing p[81] as this was removed for thyroSOLVER (p[81] = ivT3 dose)
-        qDot[3] = p82 + (SR3 + p20 * q5 + p21 * q6 - (p22 + p23) * q4F) * p69 + p28 * q[12];  // T3pdot unmod
-        qDot[4] = (p23 * q4F + NL * q2 - (p20 + p29) * q5); // * p75;  // T3fast  unmod
-        qDot[5] = (p22 * q4F + p15 * q3 / (p16 + q3) + p17 * q3 / (p18 + q3) - (p21) * q6); // * p74;  // T3slow    unmod
-        qDot[6] = (SRTSH - fdegTSH * q7) * p69;  // TSHp    unmod          
-        qDot[7] = f4 / p38 * q1 + p37 / p39 * q4 - p40 * q[7];  // T3B    unmod
-        qDot[8] = fLAG * (q[7] - q[8]);  // T3B LAG   unmod
-        double p43ofq9 = p43 * q[9];
-        double p45qof11 = p45 * q[11];
-        qDot[9] = -p43ofq9;  // T4PILLdot    unmod
-        qDot[10]=  p43ofq9 - (p44 * d2 + p11) * q[10];  // T4GUTdot: note p[43] * p[57] = p[43] * dial[1] = k4excrete   unmod
-        qDot[11]= -p45qof11;  // T3PILLdot  unmod
-        qDot[12]= (p45qof11 - (p46 * d4 + p28) * q[12]); //T3GUTdot: note p[45] * p[59] = p[45] * dial[3] = k3excrete  unmod
+        double NL = p(13) / (p(14) + q2);
 
-        // Delay ODEs
-        qDot[13] = (q7) - kdelay * q[13];                              // delay1
-        qDot[14] = kdelay*(q[13] - q[14]);                                  // delay2
-        qDot[15] = kdelay*(q[14] - q[15]);                                  // delay3
-        qDot[16] = kdelay*(q[15] - q[16]);                                  // delay4
-        qDot[17] = kdelay*(q[16] - q[17]);                                  // delay5
-        qDot[18] = kdelay*(q[17] - q[18]);                                  // delay6
+        // ODEs (compartment indices are 0-based; Julia q[1] → java q[0])
+        dq[0]  = p(81) + (SR4 + p(3)*q2 + p(4)*q3 - (p(5)+p(6))*q1F) * plasma_volume_ratio
+                       + p(11) * q[10];                               // T4 plasma
+        dq[1]  = p(6)*q1F - (p(3) + p(12) + NL) * q2;               // T4 fast
+        dq[2]  = p(5)*q1F - (p(4) + p(15)/(p(16)+q3) + p(17)/(p(18)+q3)) * q3; // T4 slow
+        dq[3]  = p(82) + (SR3 + p(20)*q5 + p(21)*q6 - (p(22)+p(23))*q4F) * plasma_volume_ratio
+                       + p(28) * q[12];                               // T3 plasma
+        dq[4]  = p(23)*q4F + NL*q2 - (p(20) + p(29)) * q5;          // T3 fast
+        dq[5]  = p(22)*q4F + p(15)*q3/(p(16)+q3) + p(17)*q3/(p(18)+q3) - p(21)*q6; // T3 slow
+        dq[6]  = (SRTSH - fdegTSH * q7) * plasma_volume_ratio;       // TSH plasma
+        dq[7]  = f4/p(38)*q1 + p(37)/p(39)*q4 - p(40)*q[7];         // T3B
+        dq[8]  = fLAG * (q[7] - q[8]);                               // T3B LAG
+        dq[9]  = -p(43) * q[9];                                       // T4 PILL
+        dq[10] = p(43)*q[9] - (p(44)*p(58) + p(11)) * q[10];        // T4 GUT
+        dq[11] = -p(45) * q[11];                                      // T3 PILL
+        dq[12] = p(45)*q[11] - (p(46)*p(60) + p(28)) * q[12];       // T3 GUT
+
+        // Delay chain (6 compartments)
+        dq[13] = KDELAY * (q7 - q[13]);
+        dq[14] = KDELAY * (q[13] - q[14]);
+        dq[15] = KDELAY * (q[14] - q[15]);
+        dq[16] = KDELAY * (q[15] - q[16]);
+        dq[17] = KDELAY * (q[16] - q[17]);
+        dq[18] = KDELAY * (q[17] - q[18]);
     }
+
+    // Convenience: 1-based parameter lookup to match Julia notation
+    private double p(int i) { return p[i - 1]; }
+
   
     // Sean and Jaden 3/5/26
     public static double predictVp(double h, double w, boolean sex) {
@@ -247,69 +161,161 @@ public class Thyrosim implements FirstOrderDifferentialEquations
         return Vb * (1.0 - Hem);
     }
 
-    public static double[] personalize(boolean sex, double height, double BW){
-        // sex: true = male, false = female
+    private static double referenceVp(double refBMI, boolean sex, double refHeight) {
+        double w = refBMI * refHeight * refHeight;
+        return predictVp(refHeight, w, sex);
+    }
 
-        // 1 - Compute Ideal Sex & Height Dependent Body Weight, iBW
-        double iBW, delta_iBW, HEM, Vb, Vp, Vp_new, Vpref, Vtsh_new, k05_new;
-        if(sex){
-            iBW = 176.3 - 220.6 * height + 93.5 * Math.pow(height, 2);
-            HEM = 0.45;
-        }
-        else{
-            iBW = 145.8 - 182.7 * height + 79.55 * Math.pow(height, 2);
-            HEM = 0.4;
-        }
-        
-        // 2 - Compute Patient-Specific % Deviation from iBWg , ∆iBW
-        delta_iBW = 100 * (BW - iBW) / iBW;
-        
-        // 3 - Compute Patient-Specific Blood Volume, Vb
-        double a = 1.27;
-        double n = 0.373;
-        double Vb_per_kg;
-        // Sean and Jaden 3/5/26
-        if(sex){  // male
-                Vb_per_kg = 71.96 * Math.exp(-0.007516 * delta_iBW);
-            } else {  // female
-                Vb_per_kg = 43.65 + 20.79 * Math.exp(-0.01545 * delta_iBW) 
-                            + 2.043 * Math.exp(-0.08392 * delta_iBW);
-            }
-    
-        // Compute total blood volume in liters
-        Vb = Vb_per_kg * BW / 1000;
-        // 4 - Compute Patient-Specific Blood Plasma Volume, Vp
-        double predicted_Vp = predictVp(height, BW, sex);
+    /**
+     * Build the canonical 82-element parameter array from the notebook.
+     * All values are 1-based in comments (matching Julia p[1]..p[82]).
+     */
+    public static double[] defaultParameters() {
+        double[] p = new double[82];
+        p[0]  = 0.0027785399344;   // p[1]  S4 (fitted)
+        p[1]  = 8.0;               // p[2]  tau
+        p[2]  = 0.868;             // p[3]  k12
+        p[3]  = 0.108;             // p[4]  k13
+        p[4]  = 584.0;             // p[5]  k31free
+        p[5]  = 1503.0;            // p[6]  k21free
+        p[6]  = 0.000289;          // p[7]  A (FT4 polynomial)
+        p[7]  = 0.000214;          // p[8]  B
+        p[8]  = 0.000128;          // p[9]  C
+        p[9]  = -8.83e-6;          // p[10] D
+        p[10] = 0.88;              // p[11] k4absorb
+        p[11] = 0.0189;            // p[12] k02
+        p[12] = 0.012101809339;    // p[13] VmaxD1fast (fitted)
+        p[13] = 2.85;              // p[14] KmD1fast
+        p[14] = 6.63e-4;           // p[15] VmaxD1slow
+        p[15] = 95.0;              // p[16] KmD1slow
+        p[16] = 0.00074619;        // p[17] VmaxD2slow
+        p[17] = 0.075;             // p[18] KmD2slow
+        p[18] = 3.3572e-4;         // p[19] S3 (fitted)
+        p[19] = 5.37;              // p[20] k45
+        p[20] = 0.0689;            // p[21] k46
+        p[21] = 127.0;             // p[22] k64free
+        p[22] = 2043.0;            // p[23] k54free
+        p[23] = 0.00395;           // p[24] a (FT3 polynomial)
+        p[24] = 0.00185;           // p[25] b
+        p[25] = 0.00061;           // p[26] c
+        p[26] = -0.000505;         // p[27] d  (notebook: -0.000505)
+        p[27] = 0.88;              // p[28] k3absorb
+        p[28] = 0.184972339613;    // p[29] k05 (fitted, base female value)
+        p[29] = 450.0;             // p[30] Bzero
+        p[30] = 219.7085301388;    // p[31] Azero (fitted)
+        p[31] = 0.0;               // p[32] Amax (set to 0)
+        p[32] = -3.71;             // p[33] phi
+        p[33] = 0.53;              // p[34] kdegTSH-HYPO
+        p[34] = 0.226;             // p[35] VmaxTSH
+        p[35] = 23.0;              // p[36] K50TSH
+        p[36] = 0.058786935033;    // p[37] k3 (fitted)
+        p[37] = 0.29;              // p[38] T4P-EU
+        p[38] = 0.006;             // p[39] T3P-EU
+        p[39] = 0.037;             // p[40] KdegT3B
+        p[40] = 0.0034;            // p[41] KLAG-HYPO
+        p[41] = 5.0;               // p[42] KLAG
+        p[42] = 1.3;               // p[43] k4dissolve
+        p[43] = 0.12;              // p[44] k4excrete
+        p[44] = 1.78;              // p[45] k3dissolve
+        p[45] = 0.12;              // p[46] k3excrete
+        p[46] = 3.2;               // p[47] Vp (reference, will be overridden)
+        p[47] = 5.2;               // p[48] Vtsh (reference, will be overridden)
+        // Hill function parameters
+        p[48] = 3.001011022378;    // p[49] K_circ
+        p[49] = 3.094711690204;    // p[50] K_SR_tsh
+        p[50] = 5.674773816316;    // p[51] n (hill exponent fCIRC)
+        p[51] = 6.290803221796;    // p[52] m (hill exponent SRTSH)
+        p[52] = 8.498343729591;    // p[53] K_f4
+        p[53] = 14.36664496926;    // p[54] l (hill exponent f4)
+        // Dosing (initialised to 0)
+        p[54] = 0.0;               // p[55] T4 oral dose (µmol per dose event)
+        p[55] = 0.0;               // p[56] T3 oral dose (µmol per dose event)
+        // Dial parameters (default = healthy euthyroid)
+        p[56] = 1.0;               // p[57] dial1 – T4 secretion scale
+        p[57] = 0.88;              // p[58] dial2 – T4 absorption scale
+        p[58] = 1.0;               // p[59] dial3 – T3 secretion scale
+        p[59] = 0.88;              // p[60] dial4 – T3 absorption scale
+        // Variance parameters (for fitting only, not used in simulation)
+        p[60] = 5.003761571969437;    // p[61]
+        p[61] = 0.11122955089297369;  // p[62]
+        p[62] = 0.4;                  // p[63]
+        p[63] = 0.1;                  // p[64]
+        // Reference BMI values (fitted)
+        p[64] = 21.82854404275587;    // p[65] male ref BMI
+        p[65] = 22.99050845201536;    // p[66] female ref BMI
+        // Vtsh scaling factor
+        p[66] = 1.0;                  // p[67]
+        // p[68] unused
+        p[67] = 0.0;
+        // Plasma volume ratio (will be computed per-patient)
+        p[68] = 1.0;                  // p[69]
+        // p[70..77] unused placeholders
+        for (int i = 69; i < 77; i++) p[i] = 0.0;
+        // Reference heights (fitted)
+        p[77] = 1.7608716659237555;   // p[78] male ref height (m)
+        p[78] = 1.6696106891941103;   // p[79] female ref height (m)
+        // Male clearance scale
+        p[79] = 1.0499391485135692;   // p[80]
+        // Infusion rates (IV, default 0)
+        p[80] = 0.0;                  // p[81] T4 IV infusion
+        p[81] = 0.0;                  // p[82] T3 IV infusion
+        return p;
+    }
 
-        // 5 - Rescale VP (i.e., Compute VP,new)
-        // Sean and Jaden 3/5/26
-        double BW_Mref = 67.52768, BW_Fref = 64.1447;
+    public static void personaliseParameters(double[] p, boolean sex, double height, double weight) {
+        // Reference BMI and heights from fitted parameters
+        double refBMI  = sex ? p[64] : p[65];   // p[65]/p[66]
+        double refH_M  = p[77];                  // p[78]
+        double refH_F  = p[78];                  // p[79]
 
-         if(sex){  // male
-                Vpref = predictVp(1.7608, 67.61, true);
-        } else {  // female
-                Vpref = predictVp(1.669, 64.06, false);
-            }
+        // Compute reference Vp (average of male/female reference)
+        double refVp = (referenceVp(refBMI, true, refH_M) + referenceVp(refBMI, false, refH_F)) / 2.0;
 
+        // Patient Vp
+        double patientVp = predictVp(height, weight, sex);
 
-        Vp_new = (3.2*predicted_Vp)/Vpref;
-        
-        // 6 - Compute Patient-Specific TSH Distribution Volume, Vtsh
-        Vtsh_new = 5.2 + (Vp_new - 3.2);
+        // Scaled Vp (normalised to 3.2 L reference)
+        double Vp_new = patientVp * 3.2 / refVp;
 
-        // 7 - Compute Patient-Specific T3 Clearance Rate, k05_new 
-        double Cm = 1.05, k05 = 0.185; // Sean and Jaden 3/5/26
-        if(sex){
-            k05_new = Cm * k05;
-        }
-        else{
-            k05_new = k05;
-        }
+        // Vtsh = 5.2 + Vtsh_scale * (Vp_new - 3.2)
+        double Vtsh_new = 5.2 + p[66] * (Vp_new - 3.2);  // p[67]
 
-        // prints the 3 values
-        double[] newVals = new double[] {Vp_new, Vtsh_new, k05_new};
-        System.out.println(Arrays.toString(newVals));
-        return newVals;
+        // Plasma volume ratio for ODE scaling
+        double Vp_ratio = patientVp / refVp;
+
+        // k05: scale by male clearance factor if male
+        double k05_base = 0.184972339613;  // p[29] base (female)
+        double k05_new  = sex ? k05_base * p[79] : k05_base;  // p[80]
+
+        // Write back
+        p[46] = Vp_new;    // p[47]
+        p[47] = Vtsh_new;  // p[48]
+        p[68] = Vp_ratio;  // p[69]
+        p[28] = k05_new;   // p[29]
+    }
+
+    public static double[] defaultInitialConditions() {
+        return new double[]{
+            0.322114215761171,   // q[1]  T4 plasma
+            0.201296960359917,   // q[2]  T4 fast
+            0.638967411907560,   // q[3]  T4 slow
+            0.00663104034826483, // q[4]  T3 plasma
+            0.0112595761822961,  // q[5]  T3 fast
+            0.0652960640300348,  // q[6]  T3 slow
+            1.78829584764370,    // q[7]  TSH plasma
+            7.05727560072869,    // q[8]  T3B
+            7.05714474742141,    // q[9]  T3B LAG
+            0.0,                 // q[10] T4 PILL
+            0.0,                 // q[11] T4 GUT
+            0.0,                 // q[12] T3 PILL
+            0.0,                 // q[13] T3 GUT
+            3.34289716182018,    // q[14] delay1
+            3.69277248068433,    // q[15] delay2
+            3.87942133769244,    // q[16] delay3
+            3.90061903207543,    // q[17] delay4
+            3.77875734283571,    // q[18] delay5
+            3.55364471589659     // q[19] delay6
+        };
     }
 
     public void plot_all(){
@@ -320,249 +326,316 @@ public class Thyrosim implements FirstOrderDifferentialEquations
         ft3_plotter.plot();
     }
 
+    /**
+     * Holds the output of a simulation run.
+     * All hormone arrays are in standard clinical units:
+     *   T4  µg/L,  T3  µg/L,  TSH  mU/L,  FT4  ng/L,  FT3  ng/L.
+     * The time array unit matches the requested mode ("hours" or "days").
+     */
+    public static class SimResult {
+        /** Time points (hours or days, depending on mode). */
+        public final double[] time;
+        /** Total T4 (µg/L). */
+        public final double[] T4;
+        /** Total T3 (µg/L). */
+        public final double[] T3;
+        /** TSH (mU/L). */
+        public final double[] TSH;
+        /** Free T4 (ng/L). */
+        public final double[] FT4;
+        /** Free T3 (ng/L). */
+        public final double[] FT3;
+
+        SimResult(double[] time, double[] T4, double[] T3,
+                  double[] TSH, double[] FT4, double[] FT3) {
+            this.time = time; this.T4 = T4; this.T3 = T3;
+            this.TSH = TSH;   this.FT4 = FT4; this.FT3 = FT3;
+        }
+
+        /** Print a CSV header + rows to stdout (useful for testing). */
+        public void printCSV() {
+            System.out.println("time,T4_ugL,T3_ugL,TSH_mUL,FT4_ngL,FT3_ngL");
+            for (int i = 0; i < time.length; i++) {
+                System.out.printf("%.6f,%.6f,%.6f,%.6f,%.6f,%.6f%n",
+                    time[i], T4[i], T3[i], TSH[i], FT4[i], FT3[i]);
+            }
+        }
+    }
+    
+
+    public static class DoseEvent {
+        /** Time of dose (hours from t=0). */
+        public final double timeHours;
+        /** T4 dose in µg. */
+        public final double T4dose_ug;
+        /** T3 dose in µg. */
+        public final double T3dose_ug;
+
+        public DoseEvent(double timeHours, double T4dose_ug, double T3dose_ug) {
+            this.timeHours  = timeHours;
+            this.T4dose_ug  = T4dose_ug;
+            this.T3dose_ug  = T3dose_ug;
+        }
+    }
+
+    public static List<DoseEvent> buildPeriodicSchedule(
+            double T4dose_ug, double T3dose_ug,
+            double intervalHours, int totalDays) {
+        List<DoseEvent> events = new ArrayList<>();
+        double end = totalDays * 24.0;
+        for (double t = 0.0; t < end; t += intervalHours) {
+            events.add(new DoseEvent(t, T4dose_ug, T3dose_ug));
+        }
+        return events;
+    }
+
+
+    // -----------------------------------------------------------------------
+    // Main simulate() API
+    // -----------------------------------------------------------------------
+
+    /**
+     * Simulate the p-THYROSIM model for a specific patient.
+     *
+     * @param sex            true = male, false = female
+     * @param height         patient height in metres
+     * @param weight         patient weight in kg
+     * @param dial           double[4]: {RTF_T4, absorb_T4, RTF_T3, absorb_T3}
+     *                       (typically {RTF, 0.88, RTF, 0.88})
+     * @param doses          ordered list of {@link DoseEvent}s; may be empty
+     * @param mode           "hours" or "days"
+     * @param simulationDays simulation length in days (≤100 for hours, ≤1000 for days)
+     * @param warmup         if true, run 30-day no-dose warmup first to find patient IC
+     * @return               {@link SimResult} containing time + hormone arrays
+     */
+    public static SimResult simulate(
+            boolean sex, double height, double weight,
+            double[] dial, List<DoseEvent> doses,
+            String mode, int simulationDays, boolean warmup) {
+
+        if (mode.equals("hours") && simulationDays > 100) {
+            throw new IllegalArgumentException("Hours mode supports at most 100 days.");
+        }
+        if (mode.equals("days") && simulationDays > 1000) {
+            throw new IllegalArgumentException("Days mode supports at most 1000 days.");
+        }
+
+        // --- Build parameter array ---
+        double[] p = defaultParameters();
+
+        // Apply dials
+        p[56] = dial[0]; // p[57] dial1 T4 secretion
+        p[57] = dial[1]; // p[58] dial2 T4 absorption
+        p[58] = dial[2]; // p[59] dial3 T3 secretion
+        p[59] = dial[3]; // p[60] dial4 T3 absorption
+
+        // Personalise Vp, Vtsh, k05
+        personaliseParameters(p, sex, height, weight);
+
+        // --- Initial conditions ---
+        double[] ic = defaultInitialConditions();
+
+        // Optional warmup: 30-day no-dose run to get patient-specific steady-state IC
+        if (warmup) {
+            ic = runWarmup(ic, p, 30);
+        }
+
+        // --- Integrate with dose events ---
+        double endHours = simulationDays * 24.0;
+        SimResult result = integrateWithDoses(ic, p, doses, endHours, mode);
+        return result;
+    }
+
+    // -----------------------------------------------------------------------
+    // Internal: warmup run (no doses)
+    // -----------------------------------------------------------------------
+    private static double[] runWarmup(double[] ic0, double[] p, int days) {
+        double[] ic = Arrays.copyOf(ic0, ic0.length);
+        UpdatedThyrosim ode = new UpdatedThyrosim(p);
+        FirstOrderIntegrator integrator = makeIntegrator();
+
+        // Simple step handler to capture final state
+        final double[][] finalState = {null};
+        integrator.addStepHandler(new StepHandler() {
+            public void init(double t0, double[] y0, double t) {}
+            public void handleStep(StepInterpolator interp, boolean isLast) {
+                if (isLast) finalState[0] = interp.getInterpolatedState().clone();
+            }
+        });
+
+        integrator.integrate(ode, 0.0, ic, days * 24.0, ic);
+        return (finalState[0] != null) ? finalState[0] : ic;
+    }
+
+    // -----------------------------------------------------------------------
+    // Internal: piecewise integration with dose events
+    // -----------------------------------------------------------------------
+    private static SimResult integrateWithDoses(
+            double[] ic0, double[] p,
+            List<DoseEvent> doses, double endHours, String mode) {
+
+        // Collect all event times (sorted) and insert a sentinel at endHours
+        List<Double> breakpoints = new ArrayList<>();
+        for (DoseEvent de : doses) {
+            if (de.timeHours >= 0 && de.timeHours < endHours) {
+                breakpoints.add(de.timeHours);
+            }
+        }
+        breakpoints.add(endHours);
+
+        // Output accumulators
+        List<Double> timeList = new ArrayList<>();
+        List<double[]> stateList = new ArrayList<>();
+
+        double[] state = Arrays.copyOf(ic0, ic0.length);
+        double tCurrent = 0.0;
+        int doseIdx = 0; // pointer into doses list
+
+        // Advance through each segment
+        for (double tNext : breakpoints) {
+            if (tNext <= tCurrent) {
+                // Apply any doses at this exact time before integrating
+                state = applyDosesAt(state, p, doses, tCurrent);
+                tCurrent = tNext;
+                continue;
+            }
+
+            // Apply doses at tCurrent
+            state = applyDosesAt(state, p, doses, tCurrent);
+
+            // Integrate from tCurrent to tNext
+            UpdatedThyrosim ode = new UpdatedThyrosim(p);
+            FirstOrderIntegrator integrator = makeIntegrator();
+
+            List<Double> segTime   = new ArrayList<>();
+            List<double[]> segState = new ArrayList<>();
+
+            integrator.addStepHandler(new StepHandler() {
+                public void init(double t0, double[] y0, double t) {}
+                public void handleStep(StepInterpolator interp, boolean isLast) {
+                    segTime.add(interp.getCurrentTime());
+                    segState.add(interp.getInterpolatedState().clone());
+                }
+            });
+
+            double[] stateEnd = Arrays.copyOf(state, state.length);
+            integrator.integrate(ode, tCurrent, state, tNext, stateEnd);
+
+            // Append segment outputs (skip first point if not the very beginning to avoid duplicates)
+            boolean isFirstSegment = (tCurrent == 0.0);
+            for (int i = (isFirstSegment ? 0 : 1); i < segTime.size(); i++) {
+                timeList.add(segTime.get(i));
+                stateList.add(segState.get(i));
+            }
+
+            state = stateEnd;
+            tCurrent = tNext;
+        }
+
+        // Convert accumulated outputs to clinical-unit arrays
+        int n = timeList.size();
+        double[] timeArr = new double[n];
+        double[] T4arr   = new double[n];
+        double[] T3arr   = new double[n];
+        double[] TSHarr  = new double[n];
+        double[] FT4arr  = new double[n];
+        double[] FT3arr  = new double[n];
+
+        double Vp   = p[46]; // p[47]
+        double Vtsh = p[47]; // p[48]
+
+        for (int i = 0; i < n; i++) {
+            double tHrs = timeList.get(i);
+            double[] y  = stateList.get(i);
+
+            double q1 = y[0];
+            double q4 = y[3];
+            double q7 = y[6];
+
+            // Unit conversions matching notebook output_equations + FT4/FT3 equations
+            T4arr[i]  = MW_T4 * q1 / Vp;
+            T3arr[i]  = MW_T3 * q4 / Vp;
+            TSHarr[i] = TSH_CONV * q7 / Vtsh;
+
+            // FT4, FT3 – notebook uses 1.1 and 1.05 assay-adjustment scalars
+            double q1Sq = q1 * q1, q1Cu = q1Sq * q1;
+            double A = p[6], B = p[7], C = p[8], D = p[9]; // p[7..10]
+            double a = p[23], b = p[24], c = p[25], d = p[26]; // p[24..27]
+            double ft4_raw = 0.45 * (A + B*q1 + C*q1Sq + D*q1Cu) * q1;
+            double ft3_raw = 0.5  * (a + b*q1 + c*q1Sq + d*q1Cu) * q4;
+            FT4arr[i] = 1.1 * 1000.0 * MW_T4 * ft4_raw / Vp;
+            FT3arr[i] = 1.05 * 1000.0 * MW_T3 * ft3_raw / Vp;
+
+            // Convert time axis to requested unit
+            timeArr[i] = mode.equals("days") ? tHrs / 24.0 : tHrs;
+        }
+
+        return new SimResult(timeArr, T4arr, T3arr, TSHarr, FT4arr, FT3arr);
+    }
+
+    // Apply all dose events that fall exactly at time tCurrent
+    private static double[] applyDosesAt(double[] state, double[] p,
+                                          List<DoseEvent> doses, double t) {
+        double[] s = Arrays.copyOf(state, state.length);
+        for (DoseEvent de : doses) {
+            if (Math.abs(de.timeHours - t) < 1e-9) {
+                s[9]  += de.T4dose_ug / MW_T4; // T4 PILL (q[10] in 1-based)
+                s[11] += de.T3dose_ug / MW_T3; // T3 PILL (q[12] in 1-based)
+            }
+        }
+        return s;
+    }
+
+    // Shared integrator settings (DOP853, tolerances from original Thyrosim.java)
+    private static FirstOrderIntegrator makeIntegrator() {
+        return new DormandPrince853Integrator(1e-8, 100.0, 1e-10, 1e-10);
+    }
+
     public static void main(String[] args)
     {
-        // Parse input arguments
-        double IC1    = Double.parseDouble(args[0]);
-        double IC2    = Double.parseDouble(args[1]);
-        double IC3    = Double.parseDouble(args[2]);
-        double IC4    = Double.parseDouble(args[3]);
-        double IC5    = Double.parseDouble(args[4]);
-        double IC6    = Double.parseDouble(args[5]);
-        double IC7    = Double.parseDouble(args[6]);
-        double IC8    = Double.parseDouble(args[7]);
-        double IC9    = Double.parseDouble(args[8]);
-        double IC10   = Double.parseDouble(args[9]);
-        double IC11   = Double.parseDouble(args[10]);
-        double IC12   = Double.parseDouble(args[11]);
-        double IC13   = Double.parseDouble(args[12]);
-        double IC14   = Double.parseDouble(args[13]);
-        double IC15   = Double.parseDouble(args[14]);
-        double IC16   = Double.parseDouble(args[15]);
-        double IC17   = Double.parseDouble(args[16]);
-        double IC18   = Double.parseDouble(args[17]);
-        double IC19   = Double.parseDouble(args[18]);
-        double t1d    = Double.parseDouble(args[19]);
-        double t2d    = Double.parseDouble(args[20]);
-        double dial1  = Double.parseDouble(args[21]);
-        double dial2  = Double.parseDouble(args[22]);
-        double dial3  = Double.parseDouble(args[23]);
-        double dial4  = Double.parseDouble(args[24]);
-        double inf1   = Double.parseDouble(args[25]);
-        double inf4   = Double.parseDouble(args[26]);
-        String thysim = String.valueOf(args[27]);
-        final String initic = String.valueOf(args[28]);
-        double _kdelay = Double.parseDouble(args[29]);
-        double _p1     = Double.parseDouble(args[30]);
-        double _p2     = Double.parseDouble(args[31]);
-        double _p3     = Double.parseDouble(args[32]);
-        double _p4     = Double.parseDouble(args[33]);
-        double _p5     = Double.parseDouble(args[34]);
-        double _p6     = Double.parseDouble(args[35]);
-        double _p7     = Double.parseDouble(args[36]);
-        double _p8     = Double.parseDouble(args[37]);
-        double _p9     = Double.parseDouble(args[38]);
-        double _p10    = Double.parseDouble(args[39]);
-        double _p11    = Double.parseDouble(args[40]);
-        double _p12    = Double.parseDouble(args[41]);
-        double _p13    = Double.parseDouble(args[42]);
-        double _p14    = Double.parseDouble(args[43]);
-        double _p15    = Double.parseDouble(args[44]);
-        double _p16    = Double.parseDouble(args[45]);
-        double _p17    = Double.parseDouble(args[46]);
-        double _p18    = Double.parseDouble(args[47]);
-        double _p19    = Double.parseDouble(args[48]);
-        double _p20    = Double.parseDouble(args[49]);
-        double _p21    = Double.parseDouble(args[50]);
-        double _p22    = Double.parseDouble(args[51]);
-        double _p23    = Double.parseDouble(args[52]);
-        double _p24    = Double.parseDouble(args[53]);
-        double _p25    = Double.parseDouble(args[54]);
-        double _p26    = Double.parseDouble(args[55]);
-        double _p27    = Double.parseDouble(args[56]);
-        double _p28    = Double.parseDouble(args[57]);
-        double _p29    = Double.parseDouble(args[58]);
-        double _p30    = Double.parseDouble(args[59]);
-        double _p31    = Double.parseDouble(args[60]);
-        double _p32    = Double.parseDouble(args[61]);
-        double _p33    = Double.parseDouble(args[62]);
-        double _p34    = Double.parseDouble(args[63]);
-        double _p35    = Double.parseDouble(args[64]);
-        double _p36    = Double.parseDouble(args[65]);
-        double _p37    = Double.parseDouble(args[66]);
-        double _p38    = Double.parseDouble(args[67]);
-        double _p39    = Double.parseDouble(args[68]);
-        double _p40    = Double.parseDouble(args[69]);
-        double _p41    = Double.parseDouble(args[70]);
-        double _p42    = Double.parseDouble(args[71]);
-        double _p43    = Double.parseDouble(args[72]);
-        double _p44    = Double.parseDouble(args[73]);
-        double _p45    = Double.parseDouble(args[74]);
-        double _p46    = Double.parseDouble(args[75]);
-        double _p47    = Double.parseDouble(args[76]);
-        double _p48    = Double.parseDouble(args[77]);
-
-        boolean pat_sex = Boolean.parseBoolean(args[78]);
-        double pat_height = Double.parseDouble(args[79]);
-        double pat_weight = Double.parseDouble(args[80]);
-
-        double[] personalized = personalize(pat_sex, pat_height, pat_weight);
-        double Vp_personalized = personalized[0];
-        double Vtsh_personalized = personalized[1];
-        double k05_personalized = personalized[2];
-
-        // Get ODEs and parameters
-        Thyrosim ode = new Thyrosim(dial1, dial2, dial3, dial4, inf1, inf4, // Sean and Jaden 3/5/26
-                                    _kdelay,
-                                    _p1,  _p2,  _p3,  _p4,  _p5,  _p6,  _p7,
-                                    _p8,  _p9,  _p10, _p11, _p12, _p13, _p14,
-                                    _p15, _p16, _p17, _p18, _p19, _p20, _p21,
-                                    _p22, _p23, _p24, _p25, _p26, _p27, _p28,
-                                    k05_personalized, _p30, _p31, _p32, _p33, _p34, _p35,
-                                    _p36, _p37, _p38, _p39, _p40, _p41, _p42,
-                                    _p43, _p44, _p45, _p46, Vp_personalized, Vtsh_personalized);
-        int t1 = (int)Math.round(t1d);
-        int t2 = (int)Math.round(t2d);
-        double[] q = new double[] {IC1, IC2, IC3, IC4, IC5, IC6,
-                                   IC7, IC8, IC9, IC10,IC11,IC12,
-                                   IC13,IC14,IC15,IC16,IC17,IC18,IC19};
-
-        // Initialize a StepHandler for continuous output. If initic is enabled,
-        // then only print the end values. Otherwise, print all values.
-        final double[] p = new double[] { _p7,  _p8,  _p9,  _p10,
-                                          _p24, _p25, _p26, _p27 };
-        StepHandler stepHandler = new StepHandler()
+        System.out.println("=== Case 1: Female 67in/120lb, RTF=2.5%, LT4 100µg + LT3 7.5µg/24h, 30d (hours) ===");
         {
-            public void init(double t0, double[] y0, double t)
-            {
-            }
+            boolean sex   = false;
+            double  h     = 67 * 0.0254;          // inches → metres
+            double  w     = 120 * 0.453592;        // pounds → kg
+            double  RTF   = 0.025;
+            double[] dial = {RTF, 0.88, RTF, 0.88};
+            List<DoseEvent> doses = buildPeriodicSchedule(100.0, 7.5, 24.0, 30);
+            SimResult res = simulate(sex, h, w, dial, doses, "hours", 30, true);
+            res.printCSV();
+        }
 
-            public void handleStep(StepInterpolator interpolator, boolean isLast)
-            {
-                double   t = interpolator.getCurrentTime();
-                double[] y = interpolator.getInterpolatedState();
-                if (initic.equals("initic")) { // Print only end values
-                    if (isLast) {
-                        System.out.println(getLine(t,y,p));
-                    }
-                } else { // Print everything
-                    System.out.println(getLine(t,y,p));
-                }
-                double y0Squared = Math.pow(y[0], 2);
-                double y0Cubed = Math.pow(y[0], 3);
-                ode.t4_plotter.add_value(t, y[0] * 777/_p47);
-                ode.t3_plotter.add_value(t, y[3] * 651/_p47);
-                ode.tsh_plotter.add_value(t, y[6] * 5.6/_p48);
-                ode.ft4_plotter.add_value(t, 0.45 * (p[0]+p[1]*y[0]+p[2]*y0Squared+p[3]*y0Cubed)*y[0] * 777000/3.2);
-                ode.ft3_plotter.add_value(t, 0.5 * (p[4]+p[5]*y[0]+p[6]*y0Squared+p[7]*y0Cubed)*y[3] * 651000/3.2);
-            }
-        };
-
-        // Initialize an integrator with the stepHandler and integrate
-        double[] o = new double[]{ 1.0e-8, 100.0, 1.0e-10, 1.0e-10 };
-        FirstOrderIntegrator foi = new DormandPrince853Integrator(o[0],o[1],o[2],o[3]);
-        foi.addStepHandler(stepHandler);
-        foi.integrate(ode,t1,q,t2,q);
-
-        ode.plot_all();
-        // System.out.println(q.length);
-        personalize(true, 1.0, 1.0);
-
-        // There are other integrators, e.g., GraggBulirschStoerIntegrator
-    }
-
-    // Generate the output per time point. In addition, recalculate FT4 and FT3
-    // values here because unfortunately can't figure out how to extract q1F and
-    // q4F values directly.
-    public static String getLine(double t, double[] y, double[] p)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append(Double.toString(t)+" ");
-        for (double v : y)
+        System.out.println();
+        System.out.println("=== Case 2: Male 70in/160lb, RTF=50%, LT4 50µg + LT3 5µg/24h, 30d (days) ===");
         {
-            sb.append(Double.toString(v)+" ");
+            boolean sex   = true;
+            double  h     = 70 * 0.0254;
+            double  w     = 160 * 0.453592;
+            double  RTF   = 0.50;
+            double[] dial = {RTF, 0.88, RTF, 0.88};
+            List<DoseEvent> doses = buildPeriodicSchedule(50.0, 5.0, 24.0, 30);
+            SimResult res = simulate(sex, h, w, dial, doses, "days", 30, true);
+            res.printCSV();
         }
-        double y0Squared = Math.pow(y[0], 2);
-        double y0Cubed = Math.pow(y[0], 3);
-        // Sean and Jaden 3/5/26
-        double ft4 = 1.07 * 0.45 * (p[0]+p[1]*y[0]+p[2]*y0Squared+p[3]*y0Cubed)*y[0];
-        double ft3 = 1.05 * 0.5 * (p[4]+p[5]*y[0]+p[6]*y0Squared+p[7]*y0Cubed)*y[3];
-        sb.append(Double.toString(ft4)+" ");
-        sb.append(Double.toString(ft3)+" ");
-        return sb.toString();
+
+        System.out.println();
+        System.out.println("=== Case 3: Male 77in/200lb, RTF=15%, LT4 137.5µg/24h + LT3 5µg/12h, 30d (days) ===");
+        {
+            boolean sex   = true;
+            double  h     = 77 * 0.0254;
+            double  w     = 200 * 0.453592;
+            double  RTF   = 0.15;
+            double[] dial = {RTF, 0.88, RTF, 0.88};
+            // LT4 every 24h, LT3 every 12h — mixed schedule
+            List<DoseEvent> doses = new ArrayList<>();
+            doses.addAll(buildPeriodicSchedule(137.5, 0.0, 24.0, 30));
+            doses.addAll(buildPeriodicSchedule(0.0, 5.0, 12.0, 30));
+            // sort by time
+            doses.sort((a, b) -> Double.compare(a.timeHours, b.timeHours));
+            SimResult res = simulate(sex, h, w, dial, doses, "days", 30, true);
+            res.printCSV();
+        }
     }
-
-    // Can alternatively read parameter values in from the config file. Not
-    // currently used.
-    public double[] readConfig(String thysim)
-    {
-        // Load properties
-        Properties prop = new Properties();
-        String configFile = "../config/" + thysim + ".params";
-        InputStream pis = null; // Param InputStream
-
-        try {
-            pis = new FileInputStream(configFile);
-        } catch (FileNotFoundException ex) {
-            System.out.println("File not found: " + configFile);
-        }
-
-        try {
-            prop.load(pis);
-        } catch (IOException io) {
-            io.printStackTrace();
-        }
-
-        double[] p = new double[] { Double.valueOf(prop.getProperty("kdelay")),
-                                    Double.valueOf(prop.getProperty("p1")),
-                                    Double.valueOf(prop.getProperty("p2")),
-                                    Double.valueOf(prop.getProperty("p3")),
-                                    Double.valueOf(prop.getProperty("p4")),
-                                    Double.valueOf(prop.getProperty("p5")),
-                                    Double.valueOf(prop.getProperty("p6")),
-                                    Double.valueOf(prop.getProperty("p7")),
-                                    Double.valueOf(prop.getProperty("p8")),
-                                    Double.valueOf(prop.getProperty("p9")),
-                                    Double.valueOf(prop.getProperty("p10")),
-                                    Double.valueOf(prop.getProperty("p11")),
-                                    Double.valueOf(prop.getProperty("p12")),
-                                    Double.valueOf(prop.getProperty("p13")),
-                                    Double.valueOf(prop.getProperty("p14")),
-                                    Double.valueOf(prop.getProperty("p15")),
-                                    Double.valueOf(prop.getProperty("p16")),
-                                    Double.valueOf(prop.getProperty("p17")),
-                                    Double.valueOf(prop.getProperty("p18")),
-                                    Double.valueOf(prop.getProperty("p19")),
-                                    Double.valueOf(prop.getProperty("p20")),
-                                    Double.valueOf(prop.getProperty("p21")),
-                                    Double.valueOf(prop.getProperty("p22")),
-                                    Double.valueOf(prop.getProperty("p23")),
-                                    Double.valueOf(prop.getProperty("p24")),
-                                    Double.valueOf(prop.getProperty("p25")),
-                                    Double.valueOf(prop.getProperty("p26")),
-                                    Double.valueOf(prop.getProperty("p27")),
-                                    Double.valueOf(prop.getProperty("p28")),
-                                    Double.valueOf(prop.getProperty("p29")),
-                                    Double.valueOf(prop.getProperty("p30")),
-                                    Double.valueOf(prop.getProperty("p31")),
-                                    Double.valueOf(prop.getProperty("p32")),
-                                    Double.valueOf(prop.getProperty("p33")),
-                                    Double.valueOf(prop.getProperty("p34")),
-                                    Double.valueOf(prop.getProperty("p35")),
-                                    Double.valueOf(prop.getProperty("p36")),
-                                    Double.valueOf(prop.getProperty("p37")),
-                                    Double.valueOf(prop.getProperty("p38")),
-                                    Double.valueOf(prop.getProperty("p39")),
-                                    Double.valueOf(prop.getProperty("p40")),
-                                    Double.valueOf(prop.getProperty("p41")),
-                                    Double.valueOf(prop.getProperty("p42")),
-                                    Double.valueOf(prop.getProperty("p43")),
-                                    Double.valueOf(prop.getProperty("p44")),
-                                    Double.valueOf(prop.getProperty("p45")),
-                                    Double.valueOf(prop.getProperty("p46")),
-                                    Double.valueOf(prop.getProperty("p47")),
-                                    Double.valueOf(prop.getProperty("p48"))};
-        return p;
-    }
+    
 }
 
