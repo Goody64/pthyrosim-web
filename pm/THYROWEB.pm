@@ -675,7 +675,7 @@ EOF
 Simulation Time:
 <input type="text" id="simtime" name="simtime" value="120">
 <span class="simtime-unit">Hours</span>
-<label id="simtime-info" title="Simulation Time must be &le; 2400 hours (100 days).">
+<label id="simtime-info" title="Simulation Time must be &le; 2400 hours (100 days) in hours mode, or &le; 1000 days in days mode.">
   <img class="info-icon-l" src="../img/info.svg" alt="info">
 </label>
 EOF
