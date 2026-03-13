@@ -172,7 +172,7 @@ sub new {
 
     # Define default simulation time (days)
     $self->{simTime} = 5;
-    $self->{simTimeMax} = 100;
+    $self->{simTimeMax} = 1000;
 
     # Define default thysim
     $self->{thysim}  = $params{thysim}  // "Thyrosim";
