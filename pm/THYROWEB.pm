@@ -113,7 +113,7 @@ sub initDisplay {
         $self->{thysim}  = 'Thyrosim';
         $self->{thysimD} = 'THYROSIM';
         $self->{headerstyle} = '';
-        $self->{examples} = ['experiment-default','experiment-DiJo19-1'];
+        $self->{examples} = ['experiment-default','experiment-DiJo19-1','experiment-Hashimoto-F7'];
     }
 
     # ThyrosimJr
@@ -166,6 +166,20 @@ sub initExamples {
                     &micro;g $self->{T3} daily for 30 days.",
         img     => '../img/experiment-DiJo19-1.png',
         alt     => 'DiStefano-Jonklass Example 1',
+    };
+
+    $self->{experiments}->{'experiment-Hashimoto-F7'} = {
+        name    => 'experiment-Hashimoto-F7',
+        bold    => 'Hashimoto\'s Patient Example',
+        text    => "simulates 240 days of treatment for a female Hashimoto's patient
+                    (54kg, 1.7m). This was reproduced from Figure 7 of the 2026 
+                    pThyrosim research paper. The initial state of the patient was TSH&gt;40mU/L,
+                    FT4=5ng/L, FT3&lt;2ng/L. The doses were
+                    150&micro;g LT4 daily for 60 days, 75&micro;g LT4
+                    daily for 90 days, and 100&micro;g LT4+7.5&micro;g
+                    LT3 daily for 90 days.",
+        img     => '../img/hashimoto.png',
+        alt     => 'Hashimoto Example',
     };
 
 }

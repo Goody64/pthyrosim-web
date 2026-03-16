@@ -551,6 +551,11 @@ function getExperimentStr(exp) {
         return "experiment="+exp+"&thysim=Thyrosim";
     }
 
+    // Hashimoto's patient example from Figure 7 of 2026 pThyrosim Frontiers paper. For pThyrosim.
+    if (exp == "experiment-Hashimoto-F7") {
+        return "experiment="+exp+"&thysim=Thyrosim";
+    }
+
     return false;
 }
 
@@ -575,6 +580,23 @@ function executeExperiment(exp) {
         tuneDials(25,88,25,88);
         addInputOral('T4',123,24/getTimeDivisor(),false,24/getTimeDivisor(),720/getTimeDivisor());
         addInputOral('T3',6.5,24/getTimeDivisor(),false,24/getTimeDivisor(),720/getTimeDivisor());
+    }
+
+    if (exp == "experiment-Hashimoto-F7") {
+        $('#simtime').val(240 * getTimeMultiplier());
+        $('#weight').val(54);
+        $('#height').val(1.7);
+        $('#weight-unit').val('kg');
+        $('#height-unit').val('m');
+        weightKg = 54;
+        heightMeters = 1.7;
+        $('input[name="sex"]').parent().removeClass('active');
+        $('input[name="sex"][value="F"]').prop('checked', true).parent().addClass('active');
+        tuneDials(2.5,88,2.5,88);
+        addInputOral('T4',150,getTimeMultiplier(),false,1*getTimeMultiplier(),60*getTimeMultiplier());
+        addInputOral('T4',75,getTimeMultiplier(),false,61*getTimeMultiplier(),150*getTimeMultiplier());
+        addInputOral('T4',100,getTimeMultiplier(),false,151*getTimeMultiplier(),240*getTimeMultiplier());
+        addInputOral('T3',7.5,getTimeMultiplier(),false,151*getTimeMultiplier(),240*getTimeMultiplier());
     }
 
 }
@@ -1578,10 +1600,11 @@ function animation() {
 //          4: T3 Absorption
 //===================================================================
 var sliderObj = {
-    '1':{'min':0,'max':125,'value':100,'range':'min','animate':'fast'},
-    '2':{'min':0,'max':100,'value':88, 'range':'min','animate':'fast'},
-    '3':{'min':0,'max':125,'value':100,'range':'min','animate':'fast'},
-    '4':{'min':0,'max':100,'value':88, 'range':'min','animate':'fast'}
+    // modified from changing slider step by 1 to 0.1 to match Hashimoto example better. 
+    '1':{'min':0,'max':125,'value':100,'step':0.1,'range':'min','animate':'fast'},
+    '2':{'min':0,'max':100,'value':88, 'step':0.1,'range':'min','animate':'fast'},
+    '3':{'min':0,'max':125,'value':100,'step':0.1,'range':'min','animate':'fast'},
+    '4':{'min':0,'max':100,'value':88, 'step':0.1,'range':'min','animate':'fast'}
 };
 
 //===================================================================
@@ -1681,6 +1704,7 @@ $(function() {
             min:     o.min,
             max:     o.max,
             value:   o.value,
+            step:    o.step, // allow specifying how much sliders change by
             range:   o.range,
             animate: o.animate,
             // Change dialinput's value to match slider's value
