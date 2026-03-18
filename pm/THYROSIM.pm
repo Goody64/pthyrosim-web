@@ -1227,6 +1227,22 @@ return 'dialinput1=25&dialinput2=88&dialinput3=25&dialinput4=88'
      . '&hormone-2=3&type-2=1&disabled-2=0&dose-2=6.5&int-2=1'
      .  '&start-2=1&end-2=30'
      . '' if $exp eq "experiment-DiJo19-1";
+
+#--------------------------------------------------
+# Hashimoto's patient experiment (from Figure 7 of 2026 pThyrosim Frontiers paper)
+#--------------------------------------------------
+return 'weight=54&height=1.7&sex=F'
+     . '&dialinput1=2.5&dialinput2=88&dialinput3=2.5&dialinput4=88'
+     . '&simtime=240&recalcIC=1'
+     . '&hormone-1=4&type-1=1&disabled-1=0&dose-1=150&int-1=1'
+     .  '&start-1=1&end-1=60'
+     . '&hormone-2=4&type-2=1&disabled-2=0&dose-2=75&int-2=1'
+     .  '&start-2=61&end-2=150'
+     . '&hormone-3=4&type-3=1&disabled-3=0&dose-3=100&int-3=1'
+     .  '&start-3=151&end-3=240'
+     . '&hormone-4=3&type-4=1&disabled-4=0&dose-4=7.5&int-4=1'
+     .  '&start-4=151&end-4=240'
+     . '' if $exp eq "experiment-Hashimoto-F7";
 }
 
 #====================================================================
