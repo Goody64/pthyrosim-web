@@ -1379,7 +1379,7 @@ sub getAnthroString {
     my $weight = $self->getLvl2('anthro','weight');
     my $sex    = $self->getLvl2('anthro','sex');
     my $mode   = $self->getLvl2('anthro','mode') // 'days';
-    if ($mode eq 'hours' && defined $height && defined $weight && defined $sex) {
+    if (defined $height && defined $weight && defined $sex) {
         my $sexBool = ($sex eq 'M' || $sex eq 'male') ? 1 : 0;
         return "$height $weight $sexBool";
     }
