@@ -1,18 +1,19 @@
 "use strict";
 //=============================================================================
-// FILE:        thyrosim.js
+// FILE:        p-thyrosim.js
 // AUTHOR:      Simon X. Han
 // DESCRIPTION:
-//   Javascript functions in Thyrosim.
+//   Javascript functions in p-Thyrosim, a thyroid hormone simulator that uses personalized weight, height, and sex.
 //=============================================================================
 
 //========================================================================
 // TASK:    Functions for ajax calls.
 //========================================================================
 
-var ThyrosimGraph = new ThyrosimGraph();
+var pthyrosimGraph = new pthyrosimGraph();
 // metric mode: default for height and weight 
 var unitMode = 'metric';
+var sex = 'unknown';
 
 // Time mode: 'hours' (default) or 'days'
 // Server data is in hours
@@ -88,7 +89,7 @@ function ajax_getplot(exp) {
         // Graph results from this run
         var rdata = JSON.parse(data); // Run data
         var color = $('input:radio[name=runRadio]:checked').val();
-        ThyrosimGraph.setRun(color,rdata);
+        p-thyrosimGraph.setRun(color,rdata);
         graphAll();
         selectRunButton(getNextRunColor());
 
@@ -117,13 +118,13 @@ function ajax_getplot(exp) {
 function graphAll() {
 
     // Need to initialize the graph?
-    if (ThyrosimGraph.initGraph) {
+    if (p-thyrosimGraph.initGraph) {
         graph("FT4","" ,"1");
         graph("FT3","" ,"1");
         graph("T4" ,"" ,"1");
         graph("T3" ,"" ,"1");
         graph("TSH","1","1");
-        ThyrosimGraph.initGraph = false;
+        p-thyrosimGraph.initGraph = false;
     // Plot the graph
     } else {
         graph("FT4","" );
@@ -144,20 +145,20 @@ function graphAll() {
 function graph(hormone,addlabel,initgraph) {
 
     var thysim = $('#thysim').val();
-    var comp = ThyrosimGraph.settings[hormone].comp;
-    var unit = ThyrosimGraph.settings[hormone].unit;
-    var eRLo = ThyrosimGraph.settings[hormone].bounds[thysim].lo;
-    var eRHi = ThyrosimGraph.settings[hormone].bounds[thysim].hi;
+    var comp = p-thyrosimGraph.settings[hormone].comp;
+    var unit = p-thyrosimGraph.settings[hormone].unit;
+    var eRLo = p-thyrosimGraph.settings[hormone].bounds[thysim].lo;
+    var eRHi = p-thyrosimGraph.settings[hormone].bounds[thysim].hi;
 
     // Graph size
     var w = 420; // width in pixels of the graph
     var h = 130; // height in pixels of the graph
 
     // Scales — xVal is days by default in the backend. Convert based on timeMode
-    var xValDays = ThyrosimGraph.getXVal(comp);
+    var xValDays = p-thyrosimGraph.getXVal(comp);
     var xVal = xValDays * getTimeMultiplier();
-    var yVal = ThyrosimGraph.getYVal(hormone,comp);
-    var yEnd = ThyrosimGraph.getEndVal(yVal);
+    var yVal = p-thyrosimGraph.getYVal(hormone,comp);
+    var yEnd = p-thyrosimGraph.getEndVal(yVal);
     var x = d3.scale.linear().domain([0,xVal]).range([0,w]);
     var y = d3.scale.linear().domain([0,yEnd]).range([h,0]);
 
@@ -258,7 +259,7 @@ function graph(hormone,addlabel,initgraph) {
             .call(yAxis);
 
         // Add hidden paths to graph
-        $.each(ThyrosimGraph.colors,function(color) {
+        $.each(p-thyrosimGraph.colors,function(color) {
             // Empty data values
             var data = [0];
 
@@ -272,10 +273,10 @@ function graph(hormone,addlabel,initgraph) {
                 .data([data])
                 .attr("d",line)
                 .attr("class","line"+color)
-                .attr("stroke",ThyrosimGraph.getLinecolor(color))
+                .attr("stroke",p-thyrosimGraph.getLinecolor(color))
                 .attr("stroke-width","2.5")
                 .attr("fill","none")
-                .style("stroke-dasharray",ThyrosimGraph.getLinestyle(color));
+                .style("stroke-dasharray",p-thyrosimGraph.getLinestyle(color));
 
             // Append dummy circle for tooltip
             graph.selectAll("circle.dot"+color)
@@ -315,7 +316,7 @@ function graph(hormone,addlabel,initgraph) {
             .attr("height",h-y(rangeVals.height));
 
         // Update data points for each color
-        $.each(ThyrosimGraph.colors,function(color) {
+        $.each(p-thyrosimGraph.colors,function(color) {
             // Empty data values
             var valuesD = [0];
             var valuesT = [0];
@@ -324,10 +325,10 @@ function graph(hormone,addlabel,initgraph) {
             graph.select("svg").select("g").selectAll(".dot"+color)
                 .data(valuesD).exit().remove();
 
-            if (ThyrosimGraph.checkRunColorExist(color)) {
+            if (p-thyrosimGraph.checkRunColorExist(color)) {
                 // Real data values
-                valuesD = ThyrosimGraph.getRunValues(color,comp);
-                valuesT = ThyrosimGraph.getRunValues(color,"t");
+                valuesD = p-thyrosimGraph.getRunValues(color,comp);
+                valuesT = p-thyrosimGraph.getRunValues(color,"t");
             }
 
             // Line
@@ -400,7 +401,7 @@ function graph(hormone,addlabel,initgraph) {
 // DESC:    Get the next run color.
 //===================================================================
 function getNextRunColor() {
-    var colors = Object.keys(ThyrosimGraph.colors);
+    var colors = Object.keys(p-thyrosimGraph.colors);
     var color = $('input:radio[name=runRadio]:checked').val();
     var i = colors.indexOf(color);
     var j = i + 1;
@@ -536,24 +537,24 @@ function validateForm() {
 //===================================================================
 function getExperimentStr(exp) {
 
-    // The default Thyrosim example.
+    // The default p-thyrosim example.
     if (exp == "experiment-default") {
-        return "experiment="+exp+"&thysim=Thyrosim";
+        return "experiment="+exp+"&thysim=p-thyrosim";
     }
 
-    // The default ThyrosimJr example.
+    // The default p-thyrosimJr example.
     if (exp == "experiment-default-jr") {
-        return "experiment="+exp+"&thysim=ThyrosimJr";
+        return "experiment="+exp+"&thysim=p-thyrosimJr";
     }
 
-    // The DiStefano-Jonklaas 2019 Example-1. Only relevant for Thyrosim.
+    // The DiStefano-Jonklaas 2019 Example-1. Only relevant for p-thyrosim.
     if (exp == "experiment-DiJo19-1") {
-        return "experiment="+exp+"&thysim=Thyrosim";
+        return "experiment="+exp+"&thysim=p-thyrosim";
     }
 
-    // Hashimoto's patient example from Figure 7 of 2026 pThyrosim Frontiers paper. For pThyrosim.
+    // Hashimoto's patient example from Figure 7 of 2026 pp-thyrosim Frontiers paper. For pp-thyrosim.
     if (exp == "experiment-Hashimoto-F7") {
-        return "experiment="+exp+"&thysim=Thyrosim";
+        return "experiment="+exp+"&thysim=p-thyrosim";
     }
 
     return false;
@@ -567,7 +568,7 @@ function getExperimentStr(exp) {
 //===================================================================
 function executeExperiment(exp) {
     $('#input-manager').empty();             // Clear the input space
-    ThyrosimGraph.setRun("Green",undefined); // Delete the Green run
+    p-thyrosimGraph.setRun("Green",undefined); // Delete the Green run
     selectRunButton('Blue');                 // Set Blue as exp run
 
     if (exp == "experiment-default") {
@@ -652,7 +653,7 @@ function addInputOral(hormone,dose,interval,singledose,start,end) {
 //===================================================================
 // DESC:    Manages plotting data as Blue or Green plots.
 //===================================================================
-function ThyrosimGraph() {
+function p-thyrosimGraph() {
     this.initGraph = true;
 
     // Default color settings. Color order must match button order.
@@ -675,46 +676,46 @@ function ThyrosimGraph() {
         FT4: {
             comp: 'ft4',
             unit: 'ng/L',
-            ymin: { Thyrosim: 17, ThyrosimJr: 15 },
+            ymin: { p-thyrosim: 17, p-thyrosimJr: 15 },
             bounds: {
-                Thyrosim:   { lo: 8,  hi: 17 },
-                ThyrosimJr: { lo: 10, hi: 14 }
+                p-thyrosim:   { lo: 8,  hi: 17 },
+                p-thyrosimJr: { lo: 10, hi: 14 }
             }
         },
         FT3: {
             comp: 'ft3',
             unit: 'ng/L',
-            ymin: { Thyrosim: 4, ThyrosimJr: 7 },
+            ymin: { p-thyrosim: 4, p-thyrosimJr: 7 },
             bounds: {
-                Thyrosim:   { lo: 2.22, hi: 3.83 },
-                ThyrosimJr: { lo: 2.32, hi: 7.07 },
+                p-thyrosim:   { lo: 2.22, hi: 3.83 },
+                p-thyrosimJr: { lo: 2.32, hi: 7.07 },
             }
         },
         T4: {
             comp: '1',
             unit: '\u03BCg/L', // mcg
-            ymin: { Thyrosim: 110, ThyrosimJr: 120 },
+            ymin: { p-thyrosim: 110, p-thyrosimJr: 120 },
             bounds: {
-                Thyrosim:   { lo: 45, hi: 105 },
-                ThyrosimJr: { lo: 59, hi: 119 },
+                p-thyrosim:   { lo: 45, hi: 105 },
+                p-thyrosimJr: { lo: 59, hi: 119 },
             }
         },
         T3: {
             comp: '4',
             unit: '\u03BCg/L', // mcg
-            ymin: { Thyrosim: 1, ThyrosimJr: 2 },
+            ymin: { p-thyrosim: 1, p-thyrosimJr: 2 },
             bounds: {
-                Thyrosim:   { lo: 0.6, hi: 1.8  },
-                ThyrosimJr: { lo: 1,   hi: 2.15 },
+                p-thyrosim:   { lo: 0.6, hi: 1.8  },
+                p-thyrosimJr: { lo: 1,   hi: 2.15 },
             }
         },
         TSH: {
             comp: '7',
             unit: 'mU/L',
-            ymin: { Thyrosim: 4, ThyrosimJr: 4 },
+            ymin: { p-thyrosim: 4, p-thyrosimJr: 4 },
             bounds: {
-                Thyrosim:   { lo: 0.3, hi: 4 },
-                ThyrosimJr: { lo: 0.6, hi: 4 },
+                p-thyrosim:   { lo: 0.3, hi: 4 },
+                p-thyrosimJr: { lo: 0.6, hi: 4 },
             }
         },
     };
@@ -875,7 +876,7 @@ function normRangeCalc(yMax,y2,y1) {
 // DESC:    Erase a drawn line
 //===================================================================
 function resetRun(color) {
-    ThyrosimGraph.setRun(color,undefined);
+    p-thyrosimGraph.setRun(color,undefined);
     graphAll();
 }
 
@@ -895,7 +896,7 @@ function switchTimeMode(newMode) {
     timeMode = newMode;
     convertFormTimes(oldMode, newMode);
     updateTimeLabels();
-    if (!ThyrosimGraph.initGraph) {
+    if (!p-thyrosimGraph.initGraph) {
         graphAll();
     }
 }
@@ -1080,7 +1081,7 @@ function serializeForm() {
         data = $('form').serialize();
     }
     $w.val(wOrig); $h.val(hOrig);
-    // Send current time mode to the THYROSIM.pm
+    // Send current time mode to the p-thyrosim.pm
     data += '&mode=' + timeMode;
     return data;
 }
@@ -1555,7 +1556,7 @@ function animation() {
     // 2. The image src has a '?+id', this is so browsers are forced to reload
     //    the image. Otherwise, the browser uses a cached image and the
     //    animation will appear out of sync.
-    // 3. Animation positions are defined in thyrosim.css under the category's
+    // 3. Animation positions are defined in p-thyrosim.css under the category's
     //    name.
     //---------------------------------------------------------
     this.showAnimation = showAnimation;
