@@ -111,7 +111,7 @@ sub initDisplay {
     # Thyrosim
     if ($self->{ts}->{thysim} eq 'Thyrosim') {
         $self->{thysim}  = 'Thyrosim';
-        $self->{thysimD} = 'THYROSIM';
+        $self->{thysimD} = 'p-THYROSIM';
         $self->{headerstyle} = '';
         $self->{examples} = ['experiment-default','experiment-DiJo19-1','experiment-Hashimoto-F7'];
     }
@@ -208,6 +208,9 @@ treatment options.
 Bolus and intravenous infusion inputs also can be added, for exploratory
 research and teaching demonstrations.
 
+p-THYROSIM also introduces anthropometric inputs for height and weight, and hours 
+(up to 100 days) and days (up to 1000 days) support.
+
 For easy comparisons, the interface includes facility for superimposing two sets
 of simulation results.
 <br>
@@ -248,6 +251,8 @@ Minimum Usage:
       </li>
     </ol>
   </li>
+  <li>
+    Add in patient's sex, weight, and height to personalize the simulation.
 </ol>
 Features:
 <ol>
@@ -331,8 +336,14 @@ not validated for hyperthyroid conditions.
 <br>
 <br>
 
-The full implemented Thyrosim model (ver. Dec 2015) is described
+The full implemented original Thyrosim model (ver. Dec 2015) is described
 <a target="_blank" href="../resource/Thyrosim-20151206.pdf">here</a>.
+
+<br>
+<br>
+
+The full implemented p-THYROSIM model (ver. Jan 2026) is described 
+<a target="_blank" href="../resource/pThyrosim-20260108.pdf">here</a>.
 EOF
     };
 }
@@ -432,7 +443,7 @@ sub getHead {
     'charset'   => 'utf-8',
     'viewport'  => 'width=device-width, initial-scale=1.0, shrink-to-fit=no',
     'keywords'  => 'thyrosim thyroid simulator',
-    'copyright' => 'Copyright 2013 by UCLA Biocybernetics Laboratory'
+    'copyright' => 'Copyright 2026 by UCLA Biocybernetics Laboratory'
 },
 -head => Link({
     -rel  => 'shortcut icon',
@@ -555,7 +566,7 @@ sub getHeader {
     # Generate info buttons
     my $infoBtn_About = $self->getInfoBtn('About');
     my $infoBtn_Examp = $self->getInfoBtn('Example');
-    my $infoBtn_Proje = $self->getInfoBtn('Projects');
+    # my $infoBtn_Projects = $self->getInfoBtn('Projects');
     my $infoBtn_Discl = $self->getInfoBtn('Disclaimer');
 
     return <<EOF
@@ -570,7 +581,6 @@ sub getHeader {
   </div>
 $infoBtn_About
 $infoBtn_Examp
-$infoBtn_Proje
 $infoBtn_Discl
   <!-- Logos and Info end -->
 
@@ -947,7 +957,7 @@ sub getFooter {
 
   <!-- Container (top) -->
   <div class="container textcenter pad-t-1em">
-    <b>$self->{thysimD} 3.2</b> &copy; 2013 by
+    <b>$self->{thysimD} 1.0</b> &copy; 2026 by
     <a href="http://biocyb0.cs.ucla.edu/wp/"
        target="_blank">UCLA Biocybernetics Laboratory</a>
   </div>
@@ -962,6 +972,12 @@ sub getFooter {
       <div class="footer-list">
 
         <ol>
+          <li>
+            <a target="_blank"
+               href="https://doi.org/10.3389/fendo.2025.1735282">
+                 Distefano et al., 2026
+            </a>
+          </li>
           <li>
             <a target="_blank"
                href="https://doi.org/10.3389/fendo.2022.888429">
@@ -1023,6 +1039,9 @@ sub getFooter {
 
         <ol>
           <li>
+            January 2026: Added parameters for patient's sex, weight, and height.
+          </li>
+          <li>
             July 2023: Updated the hormone normal ranges.
           </li>
           <li>
@@ -1074,7 +1093,7 @@ sub getFooter {
     </a>
     <br>
     Code repository:
-    <a href="https://bitbucket.org/DistefanoLab/thyrosim/overview"
+    <a href="https://github.com/Goody64/pthyrosim-web"
        target="_blank">click here</a>
   </div>
   <!-- Container (bot) end -->
