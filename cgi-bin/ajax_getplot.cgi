@@ -97,12 +97,12 @@ my $ps     = $thsim->getParams();
 #----------------------------------------------------------
 my $dials = $thsim->getDialString(); # Only needed once
 my $ickey = $thsim->getICKey();
-if ($thsim->hasICKey($ickey) || !$thsim->recalcIC()) { # Skipping i0
+my $anthro = $thsim->getAnthroString();
+if (($thsim->hasICKey($ickey) || !$thsim->recalcIC()) && $anthro eq "") { # Skipping i0
     $thsim->processKeyVal($ickey,'0');
 } else {
     my $ICstr = $thsim->getICString('0');
 
-    my $anthro = $thsim->getAnthroString();
     my $cmd = "$solver $ICstr 0 1008 $dials 0 0 $thysim initic $ps $anthro";
     my @res = `$cmd` or die "died: $!";
     $thsim->processResults(\@res,'0');
