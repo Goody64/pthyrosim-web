@@ -288,9 +288,6 @@ EOF
         key     => 'Project',
         val     => 'PROJECTS',
         content => <<EOF
-
-
-
 The main Thyroid Simulator.
 <ul>
   <li>
