@@ -16,7 +16,7 @@ Web app for **patient-specific thyroid hormone simulation**: height, weight, sex
 
 | Path | Purpose |
 |------|--------|
-| `java/` | ODE solver (original `Thyrosim.java` + updated kernel when integrated) |
+| `java/` | ODE solver (`Thyrosim.java` which has been updated to handle anthropometric inputs and extend up to 1000 days) |
 | `cgi-bin/` | CGI entry points |
 | `pm/` | Perl backend (THYROSIM.pm, THYROWEB.pm) |
 | `js/`, `css/`, `config/` | Frontend and config |
