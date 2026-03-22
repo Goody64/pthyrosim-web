@@ -1,6 +1,6 @@
-# Run THYROSIM locally (Ubuntu / WSL) 
+# Run p-THYROSIM locally (Ubuntu / WSL) 
 
-These are the concrete steps we used to get the original THYROSIM web app running from this repo.
+These are the steps we used to get the p-THYROSIM web app running from this repo.
 
 Repo path in this example:
 
